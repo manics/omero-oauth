@@ -194,6 +194,20 @@ def get_session_for_user(adminc, omename):
     return user_session
 
 
+def test_login(request, username):
+    adminc = OmeroWebGateway(
+        host=oauth_settings.OAUTH_HOST,
+        port=oauth_settings.OAUTH_PORT,
+        username=oauth_settings.OAUTH_ADMIN_USERNAME,
+        passwd=oauth_settings.OAUTH_ADMIN_PASSWORD,
+        secure=True)
+    assert adminc.connect()
+    session = get_session_for_user(adminc, username)
+
+    logger.info('test_login: %s', session)
+    return login_with_session(request, session)
+
+
 def login_with_session(request, session):
     # Based on
     # https://github.com/openmicroscopy/openmicroscopy/blob/v5.4.10/components/tools/OmeroWeb/omeroweb/webgateway/views.py#L2943
