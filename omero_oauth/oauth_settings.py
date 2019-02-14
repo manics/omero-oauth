@@ -58,7 +58,7 @@ OAUTH_SETTINGS_MAPPING = {
         ['OAUTH_USER_LASTNAME', 'oauth-{login}', str_not_empty, None],
 
     'omero.web.oauth.user.timeout':
-        ['OAUTH_USER_TIMEOUT', 600, int, None],
+        ['OAUTH_USER_TIMEOUT', 86400, int, None],
 
     'omero.web.oauth.group.name':
         ['OAUTH_GROUP_NAME', '', str_not_empty, None],

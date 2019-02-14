@@ -14,20 +14,27 @@ from django.core.exceptions import PermissionDenied
 from requests_oauthlib import OAuth2Session
 
 import omero
+from omero.rtypes import unwrap
 from omeroweb.decorators import (
+    get_client_ip,
     login_required,
     parse_url,
 )
+from omeroweb.connector import Connector
 from omero_version import (
     build_year,
     omero_version,
 )
 
 from omeroweb.webclient.webclient_gateway import OmeroWebGateway
+from omeroweb.webadmin.webadmin_utils import upgradeCheck
+
 import oauth_settings
 
 
 logger = logging.getLogger(__name__)
+
+USERAGENT = 'OMERO.oauth'
 
 
 def index(request, **kwargs):
@@ -78,6 +85,7 @@ def handle_not_logged_in(request):
         'version': omero_version,
         'build_year': build_year,
         'authorization_url': authorization_url,
+        'client_name': oauth_settings.OAUTH_CLIENT_NAME
     }
     if hasattr(settings, 'LOGIN_LOGO'):
         context['LOGIN_LOGO'] = settings.LOGIN_LOGO
@@ -89,11 +97,11 @@ def handle_not_logged_in(request):
 
 
 def _expand_template(name, args):
-    template = settings.getattr(name)
+    template = getattr(oauth_settings, name)
     return template.format(**args)
 
 
-def callback(self, request):
+def callback(request):
     state = request.session.get('oauth_state')
     if not state:
         raise PermissionDenied('OAuth state missing')
@@ -114,11 +122,12 @@ def callback(self, request):
     firstname = _expand_template('OAUTH_USER_FIRSTNAME', userinfo)
     lastname = _expand_template('OAUTH_USER_LASTNAME', userinfo)
 
-    uid = get_or_create_account(omename, email, firstname, lastname)
-    assert uid
+    uid, session = get_or_create_account_and_session(
+        omename, email, firstname, lastname)
+    return login_with_session(request, session)
 
 
-def get_or_create_account(omename, email, firstname, lastname):
+def get_or_create_account_and_session(omename, email, firstname, lastname):
     adminc = OmeroWebGateway(
         host=oauth_settings.OAUTH_HOST,
         port=oauth_settings.OAUTH_PORT,
@@ -128,13 +137,17 @@ def get_or_create_account(omename, email, firstname, lastname):
     if not adminc.connect():
         raise Exception('Failed to get account '
                         '(unable to obtain admin connection)')
-    e = adminc.getObject('Experimenter', attributes={'omeName': omename})
-    if e:
-        return e.id
-
-    gid = get_or_create_group(adminc)
-    uid = create_user(adminc, omename, email, firstname, lastname, gid)
-    return uid
+    try:
+        e = adminc.getObject('Experimenter', attributes={'omeName': omename})
+        if e:
+            uid = e.id
+        else:
+            gid = get_or_create_group(adminc)
+            uid = create_user(adminc, omename, email, firstname, lastname, gid)
+        session = get_session_for_user(adminc, omename)
+    finally:
+        adminc.close()
+    return uid, session
 
 
 def get_or_create_group(adminc, groupname=None):
@@ -173,7 +186,45 @@ def get_session_for_user(adminc, omename):
     p.name = omename
     # p.group = 'user'
     p.eventType = 'User'
-    user_session = ss.createSessionWithTimeout(
-        p, oauth_settings.OAUTH_USER_TIMEOUT * 1000)
+    # http://downloads.openmicroscopy.org/omero/5.4.10/api/slice2html/omero/api/ISession.html#createSessionWithTimeout
+    # This is the absolute timeout (relative to creation time)
+    user_session = unwrap(ss.createSessionWithTimeout(
+        p, oauth_settings.OAUTH_USER_TIMEOUT * 1000).getUuid())
     logger.debug('Created new oauth session: %s %s', omename, user_session)
     return user_session
+
+
+def login_with_session(request, session):
+    # Based on
+    # https://github.com/openmicroscopy/openmicroscopy/blob/v5.4.10/components/tools/OmeroWeb/omeroweb/webgateway/views.py#L2943
+    username = session
+    password = session
+    server_id = 1
+    is_secure = settings.SECURE
+    connector = Connector(server_id, is_secure)
+
+    compatible = True
+    if settings.CHECK_VERSION:
+        compatible = connector.check_version(USERAGENT)
+    if compatible:
+        conn = connector.create_connection(
+            USERAGENT, username, password,
+            userip=get_client_ip(request))
+        if conn is not None:
+            try:
+                request.session['connector'] = connector
+                # UpgradeCheck URL should be loaded from the server or
+                # loaded omero.web.upgrades.url allows to customize web
+                # only
+                try:
+                    upgrades_url = settings.UPGRADES_URL
+                except AttributeError:
+                    upgrades_url = conn.getUpgradesUrl()
+                upgradeCheck(url=upgrades_url)
+                # return handle_logged_in(request, conn, connector)
+                return handle_logged_in(request, conn=conn)
+            finally:
+                conn.close(hard=False)
+
+        raise Exception('Failed to login with session %s', session)
+    raise Exception('Incompatible server')

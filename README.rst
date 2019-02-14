@@ -67,6 +67,13 @@ Restart OMERO.web in the usual way.
 New users will be able to sign-up for an account at http://omero.web.host/signup.
 
 
+Development
+-----------
+
+OAuth2 requires https to be used throughout.
+During development you can disable this by setting an environment variable ``OAUTHLIB_INSECURE_TRANSPORT=1``
+
+
 Release process
 ---------------
 
