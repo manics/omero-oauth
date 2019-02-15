@@ -47,15 +47,15 @@ OAUTH_SETTINGS_MAPPING = {
     'omero.web.oauth.admin.password':
         ['OAUTH_ADMIN_PASSWORD', '', str_not_empty, None],
 
-    # These templates are expanded using userinfo
+    # {templates} are expanded using fields in userinfo
     'omero.web.oauth.user.name':
         ['OAUTH_USER_NAME', 'oauth-{login}', str_not_empty, None],
     'omero.web.oauth.user.email':
-        ['OAUTH_USER_EMAIL', 'oauth-{email}', str, None],
+        ['OAUTH_USER_EMAIL', '{email}', str, None],
     'omero.web.oauth.user.firstname':
-        ['OAUTH_USER_FIRSTNAME', 'oauth-{login}', str_not_empty, None],
+        ['OAUTH_USER_FIRSTNAME', 'oauth', str_not_empty, None],
     'omero.web.oauth.user.lastname':
-        ['OAUTH_USER_LASTNAME', 'oauth-{login}', str_not_empty, None],
+        ['OAUTH_USER_LASTNAME', '{login}', str_not_empty, None],
 
     'omero.web.oauth.user.timeout':
         ['OAUTH_USER_TIMEOUT', 86400, int, None],

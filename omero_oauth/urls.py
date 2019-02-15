@@ -7,9 +7,7 @@ from . import views
 urlpatterns = patterns(
     'django.views.generic.simple',
 
-    url(r'^$', views.index, name="oauth_index"),
-    url(r'^callback$', views.callback, name="oauth_callback"),
-
-    url(r'^test_login/(?P<username>[a-zA-Z0-9-]+)$', views.test_login,
-        name="test_login"),
+    url(r'^$', views.OauthLoginView.as_view(), name="oauth_index"),
+    url(r'^callback$', views.OauthCallbackView.as_view(),
+        name="oauth_callback"),
 )
