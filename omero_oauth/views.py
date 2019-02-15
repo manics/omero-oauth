@@ -137,16 +137,11 @@ class OauthCallbackView(WebclientLoginView):
             client_secret=oauth_settings.OAUTH_CLIENT_SECRET,
             code=code)
         logger.debug('Got OAuth token %s', token)
-        userinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO).json()
-        logger.debug('Got OAuth userinfo %s', userinfo)
 
-        omename = _expand_template('OAUTH_USER_NAME', userinfo)
-        email = _expand_template('OAUTH_USER_EMAIL', userinfo)
-        firstname = _expand_template('OAUTH_USER_FIRSTNAME', userinfo)
-        lastname = _expand_template('OAUTH_USER_LASTNAME', userinfo)
+        userinfo = get_userinfo(oauth, token)
+        logger.debug('Got userinfo %s', userinfo)
 
-        uid, session = self.get_or_create_account_and_session(
-            omename, email, firstname, lastname)
+        uid, session = self.get_or_create_account_and_session(userinfo)
         return self.login_with_session(request, session)
 
     def login_with_session(self, request, session):
@@ -187,8 +182,8 @@ class OauthCallbackView(WebclientLoginView):
         # Disable super method
         raise Exception('This should never be called')
 
-    def get_or_create_account_and_session(
-            self, omename, email, firstname, lastname):
+    def get_or_create_account_and_session(self, userinfo):
+        omename, email, firstname, lastname = userinfo
         adminc = OmeroWebGateway(
             host=oauth_settings.OAUTH_HOST,
             port=oauth_settings.OAUTH_PORT,
@@ -253,3 +248,22 @@ class OauthCallbackView(WebclientLoginView):
             p, oauth_settings.OAUTH_USER_TIMEOUT * 1000).getUuid())
         logger.debug('Created new oauth session: %s %s', omename, user_session)
         return user_session
+
+
+def get_userinfo(oauth, token):
+    m = {
+        'default': userinfo_default,
+    }
+    userinfo = m[oauth_settings.OAUTH_USERINFO_TYPE](oauth, token)
+    return userinfo
+
+
+def userinfo_default(oauth, token):
+    userinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO).json()
+    logger.debug('Got raw user %s', userinfo)
+
+    omename = _expand_template('OAUTH_USER_NAME', userinfo)
+    email = _expand_template('OAUTH_USER_EMAIL', userinfo)
+    firstname = _expand_template('OAUTH_USER_FIRSTNAME', userinfo)
+    lastname = _expand_template('OAUTH_USER_LASTNAME', userinfo)
+    return omename, email, firstname, lastname

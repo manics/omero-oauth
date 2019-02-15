@@ -37,6 +37,8 @@ OAUTH_SETTINGS_MAPPING = {
         ['OAUTH_URL_TOKEN', '', str_not_empty, None],
     'omero.web.oauth.url.userinfo':
         ['OAUTH_URL_USERINFO', '', str_not_empty, None],
+    'omero.web.oauth.userinfo.type':
+        ['OAUTH_USERINFO_TYPE', 'default', str_not_empty, None],
 
     'omero.web.oauth.host':
         ['OAUTH_HOST', '', str_not_empty, None],
@@ -48,6 +50,7 @@ OAUTH_SETTINGS_MAPPING = {
         ['OAUTH_ADMIN_PASSWORD', '', str_not_empty, None],
 
     # {templates} are expanded using fields in userinfo
+    # These may be ignored if omero.web.oauth.userinfo.type is not default
     'omero.web.oauth.user.name':
         ['OAUTH_USER_NAME', 'oauth-{login}', str_not_empty, None],
     'omero.web.oauth.user.email':
