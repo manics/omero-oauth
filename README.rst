@@ -4,7 +4,7 @@
 
 OMERO.oauth
 ===========
-OMERO.web app to allow OAuth login to OMERO.
+OMERO.web app to allow OAuth2 login to OMERO.
 
 
 Requirements
@@ -23,39 +23,46 @@ This section assumes that an OMERO.web is already installed.
     $ python setup.py install
     $ omero config append omero.web.apps '"omero_signup"'
 
-Required configuration settings:
-
-- ``omero.web.signup.host``: OMERO.server hostname
-- ``omero.web.signup.admin.user``: OMERO admin username, must have permission to create groups and users
-- ``omero.web.signup.admin.password``: Password for OMERO admin username
-- ``omero.web.signup.group.name``: Default group for new users, will be created if it doesn't exist
-
-
-Optional configuration settings:
-
-- ``omero.web.signup.port``: OMERO.server port
-- ``omero.web.signup.group.templatetime``: If ``True`` expand ``omero.web.signup.group.name`` using ``strftime`` to enable time-based groups, default disabled
-- ``omero.web.signup.group.perms``: Permissions on default group for new users if it doesn't exist
-
-These configuration settings are untested due to the difficulty of configuring email on a test server:
-
-- ``omero.web.signup.email.enabled``: If ``True`` send emails to new users with their username and password, default disabled
-- ``omero.web.signup.email.subject``: Email subject for new-user emails
-- ``omero.web.signup.email.body``: Email body for new-user emails.
-  It should include template strings ``{username}`` and ``{password}`` that will be substituted with the created user's username and password.
-
-Example:
+OMERO.web 5.4.* contains a bug that prevents login using this app.
+You will need to apply `the patch omeroweb-5.4.10-webgateway-marshal-py.patch <omeroweb-5.4.10-webgateway-marshal-py.patch>`_ to your copy of OMERO.web:
 
 ::
 
-    $ omero config get
-    omero.web.apps=["omero_signup"]
-    omero.web.signup.admin.password=root-password
-    omero.web.signup.admin.user=root
-    omero.web.signup.group.name=testgroup-%Y-%m
-    omero.web.signup.group.templatetime=true
-    omero.web.signup.host=localhost
+    $ cd OMERO.py-5.4.10-ice36-b105
+    $ patch -p1 < ../omeroweb-5.4.10-webgateway-marshal-py.patch
 
+This bug is fixed in 5.5.0: https://github.com/openmicroscopy/openmicroscopy/pull/5890
+
+
+Configuration settings:
+
+- ``omero.web.oauth.client.name``: Name of the login provider, displayed on the login page, default ``'OAuth Client``
+- ``omero.web.oauth.client.id``: Client ID, obtain this from your OAuth provider
+- ``omero.web.oauth.client.secret``: Client secret ID, provided by most OAuth providers, optional
+- ``omero.web.oauth.client.scope``: A provider dependent list of scopes, optional
+
+- ``omero.web.oauth.url.authorization``: OAuth2 authorisation URL
+- ``omero.web.oauth.url.token``: OAuth2 authorisation URL
+- ``omero.web.oauth.url.userinfo``: OAuth user information URL
+
+- ``omero.web.oauth.host``: OMERO.server hostname
+- ``omero.web.oauth.port``: OMERO.server port, optional, defualt ``4064``
+- ``omero.web.oauth.admin.user``: OMERO admin username, must have permission to create groups, users, and user sessions using sudo
+- ``omero.web.oauth.admin.password``: Password for OMERO admin username
+
+The next 4 properties contain ``{template}`` variables which will be filled using the fields in the JSON response from. ``omero.web.oauth.url.userinfo``.
+Any field in the response can be used in a template:
+
+- ``omero.web.oauth.user.name``: OMERO username template, default ``oauth-{login}``. If you have other accounts on the system you must ensure accounts matching this template correspond to the OAuth user
+- ``omero.web.oauth.user.email``: OMERO Email, default ``{email}``', str, None],``
+- ``omero.web.oauth.user.firstname``: OMERO firstname, default ``oauth``
+- ``omero.web.oauth.user.lastname``: OMERO lastname, default ``{login}``
+
+- ``omero.web.oauth.user.timeout``: Maximum session length in seconds, default ``86400``
+
+- ``omero.web.oauth.group.name``: Default group for new users, will be created if it doesn't exist
+- ``omero.web.oauth.group.templatetime``: If ``True`` expand ``omero.web.oauth.group.name`` using ``strftime`` to enable time-based groups, default disabled
+- ``omero.web.oauth.group.perms``: Permissions on default group for new users if it doesn't exist
 
 Restart OMERO.web in the usual way.
 
@@ -64,14 +71,26 @@ Restart OMERO.web in the usual way.
     $ omero web restart
 
 
-New users will be able to sign-up for an account at http://omero.web.host/signup.
+Users will be able to sign-in using OAuth at http://omero.web.host/oauth.
+
+
+Configuration Examples
+----------------------
+
+After editing an example file you can apply the configuration:
+
+::
+
+    $ omero load github-example.omero
+
+- `GitHub: github-example.omero <github-example.omero>`_
 
 
 Development
 -----------
 
 OAuth2 requires https to be used throughout.
-During development you can disable this by setting an environment variable ``OAUTHLIB_INSECURE_TRANSPORT=1``
+During development you can disable this by setting an environment variable ``OAUTHLIB_INSECURE_TRANSPORT=1``.
 
 
 Release process
@@ -90,7 +109,7 @@ Use `bumpversion
 License
 -------
 
-OMERO.signup is released under the AGPL.
+OMERO.oauth is released under the AGPL.
 
 Copyright
 ---------
