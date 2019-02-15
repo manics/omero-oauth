@@ -45,6 +45,8 @@ Configuration settings:
 - ``omero.web.oauth.url.token``: OAuth2 authorisation URL
 - ``omero.web.oauth.url.userinfo``: OAuth user information URL
 
+- ``omero.web.oauth.userinfo.type``: Method for getting user information, either ``default`` or ``github``, this may override some of the ``omero.web.oauth.user.*`` properties
+
 - ``omero.web.oauth.host``: OMERO.server hostname
 - ``omero.web.oauth.port``: OMERO.server port, optional, defualt ``4064``
 - ``omero.web.oauth.admin.user``: OMERO admin username, must have permission to create groups, users, and user sessions using sudo

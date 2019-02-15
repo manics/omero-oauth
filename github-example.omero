@@ -5,11 +5,9 @@ config set omero.web.oauth.client.name github
 # Create an OAuth app: https://github.com/settings/developers
 config set omero.web.oauth.client.id CLIENT_ID
 config set omero.web.oauth.client.secret SECRET_ID
-# https://developer.github.com/apps/building-oauth-apps/understanding-scopes-for-oauth-apps/
-#config set omero.web.oauth.client.scope '["read:user", "user:email"]'
-# TODO: this only gets the publicly viewable email. The only reliable way to
-# get email is to use a different API call (not currently implemented):
-# https://stackoverflow.com/a/35387123/8062212
+
+config set omero.web.oauth.client.scope '["read:user", "user:email"]'
+config set omero.web.oauth.userinfo.type github
 
 config set omero.web.oauth.url.authorization https://github.com/login/oauth/authorize
 config set omero.web.oauth.url.token https://github.com/login/oauth/access_token

@@ -253,6 +253,7 @@ class OauthCallbackView(WebclientLoginView):
 def get_userinfo(oauth, token):
     m = {
         'default': userinfo_default,
+        'github': userinfo_github,
     }
     userinfo = m[oauth_settings.OAUTH_USERINFO_TYPE](oauth, token)
     return userinfo
@@ -266,4 +267,23 @@ def userinfo_default(oauth, token):
     email = _expand_template('OAUTH_USER_EMAIL', userinfo)
     firstname = _expand_template('OAUTH_USER_FIRSTNAME', userinfo)
     lastname = _expand_template('OAUTH_USER_LASTNAME', userinfo)
+    return omename, email, firstname, lastname
+
+
+def userinfo_github(oauth, token):
+    # Note userinfo_default() will work if the user's email is public
+    # otherwise we need another API call:
+    # https://stackoverflow.com/a/35387123/8062212
+    userinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO).json()
+    logger.debug('Got GitHub user %s', userinfo)
+    emailinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO + '/emails').json()
+    logger.debug('Got GitHub emails %s', emailinfo)
+
+    omename = _expand_template('OAUTH_USER_NAME', userinfo)
+    firstname = _expand_template('OAUTH_USER_FIRSTNAME', userinfo)
+    lastname = _expand_template('OAUTH_USER_LASTNAME', userinfo)
+    try:
+        email = [e for e in emailinfo if e['primary']][0]['email']
+    except IndexError:
+        email = _expand_template('OAUTH_USER_EMAIL', userinfo)
     return omename, email, firstname, lastname
