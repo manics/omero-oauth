@@ -5,21 +5,16 @@ import logging
 from datetime import datetime
 
 from django.conf import settings
-from django.http import HttpResponse, HttpResponseRedirect
+from django.http import HttpResponse
 from django.template import loader as template_loader
 from django.template import RequestContext as Context
-from django.core.urlresolvers import reverse
 from django.core.exceptions import PermissionDenied
 
 from requests_oauthlib import OAuth2Session
 
 import omero
 from omero.rtypes import unwrap
-from omeroweb.decorators import (
-    get_client_ip,
-    login_required,
-    parse_url,
-)
+from omeroweb.decorators import get_client_ip
 from omeroweb.connector import Connector
 from omero_version import (
     build_year,
@@ -36,60 +31,6 @@ import oauth_settings
 logger = logging.getLogger(__name__)
 
 USERAGENT = 'OMERO.oauth'
-
-
-def handle_logged_in(request, **kwargs):
-    """
-    If logged in redirect to main webclient, otherwise return None
-    """
-    # Abuse the @login_required decorateor since it contains the
-    # methods to check for an existing session
-    check = login_required()
-
-    # Copied from
-    # https://github.com/openmicroscopy/openmicroscopy/blob/v5.4.10/components/tools/OmeroWeb/omeroweb/decorators.py#L448
-    conn = kwargs.get('conn', None)
-    server_id = kwargs.get('server_id', None)
-    if conn is None:
-        try:
-            conn = check.get_connection(server_id, request)
-        except Exception:
-            conn = None
-    if conn is not None:
-        logger.error('Logged in')
-        try:
-            url = parse_url(settings.LOGIN_REDIRECT)
-        except Exception:
-            url = reverse("webindex")
-        return HttpResponseRedirect(url)
-
-
-def handle_not_logged_in(request):
-    oauth = OAuth2Session(oauth_settings.OAUTH_CLIENT_ID,
-                          scope=oauth_settings.OAUTH_CLIENT_SCOPE)
-    authorization_url, state = oauth.authorization_url(
-        oauth_settings.OAUTH_URL_AUTHORIZATION)
-    # state: used for CSRF protection
-    request.session['oauth_state'] = state
-
-    context = {
-        'version': omero_version,
-        'build_year': build_year,
-        'authorization_url': authorization_url,
-        'client_name': oauth_settings.OAUTH_CLIENT_NAME
-    }
-    if hasattr(settings, 'LOGIN_LOGO'):
-        context['LOGIN_LOGO'] = settings.LOGIN_LOGO
-
-    t = template_loader.get_template('oauth/index.html')
-    c = Context(request, context)
-    rsp = t.render(c)
-    return HttpResponse(rsp)
-
-
-def _expand_template(name, args):
-    template = getattr(oauth_settings, name)
-    return template.format(**args)
 
 
 class OauthLoginView(WebclientLoginView):
@@ -258,6 +199,11 @@ def get_userinfo(oauth, token):
     }
     userinfo = m[oauth_settings.OAUTH_USERINFO_TYPE](oauth, token)
     return userinfo
+
+
+def _expand_template(name, args):
+    template = getattr(oauth_settings, name)
+    return template.format(**args)
 
 
 def userinfo_default(oauth, token):
