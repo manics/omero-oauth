@@ -15,6 +15,10 @@ from requests_oauthlib import OAuth2Session
 import omero
 from omero.rtypes import unwrap
 from omeroweb.decorators import get_client_ip
+from omeroweb.webclient.decorators import (
+    login_required,
+    render_response,
+)
 from omeroweb.connector import Connector
 from omero_version import (
     build_year,
@@ -258,3 +262,37 @@ def userinfo_orcid(oauth, token):
     lastname = person.find('personal-details:family-name', namespaces).text
 
     return omename, email, firstname, lastname
+
+
+# TODO: Redirect to this page after oauth login
+@login_required()
+@render_response()
+def confirm(request, **kwargs):
+    conn = kwargs['conn']
+    email = conn.getUser().getEmail()
+    context = {
+        'username': conn.getUser().getName(),
+        'email_missing': not email or not email.strip()
+    }
+    t = template_loader.get_template('oauth/confirm.html')
+    c = Context(request, context)
+    rsp = t.render(c)
+    return HttpResponse(rsp)
+
+
+# TODO: Fails with a SecurityViolation
+@login_required()
+@render_response()
+def apptoken(request, **kwargs):
+    conn = kwargs['conn']
+    ss = conn.c.getSession().getSessionService()
+    group = conn.getDefaultGroup(conn.getUser().id)
+    new_session = ss.createUserSession(
+        oauth_settings.OAUTH_USER_TIMEOUT * 1000, 600 * 1000, group.name)
+    context = {
+        'new_session': unwrap(new_session.getUuid()),
+    }
+    t = template_loader.get_template('oauth/apptoken.html')
+    c = Context(request, context)
+    rsp = t.render(c)
+    return HttpResponse(rsp)

@@ -24,7 +24,7 @@
 {% block link %}
     {{ block.super }}
     <link rel="stylesheet" href="{% static "webclient/css/layout.css"|add:url_suffix %}" type="text/css" />
-    <link rel="stylesheet" href="{% static "oauth/css/ome.signup.css"|add:url_suffix %}" type="text/css" />
+    <link rel="stylesheet" href="{% static "oauth/css/ome.oauth.css"|add:url_suffix %}" type="text/css" />
 {% endblock %}
 
 {% block title %}
@@ -57,6 +57,7 @@
 
 <div style="margin: 5% auto 0; height: 100px"></div>
 <div class="login-logos">
+    {% block logos %}
     <div class="custom_logo">
         {% if LOGIN_LOGO %}
             <img src="{{ LOGIN_LOGO }}" />
@@ -65,17 +66,19 @@
         {% endif %}
     </div>
     <img src="{% static "webclient/image/logo_login_web.png" %}" />
+    {% endblock %}
 </div>
 
-<div id="signup">
-    {% block signup %}
-
-    <h1><a href="{{ authorization_url }}">Login with {{ client_name }}</a></h1>
-
+<div id="oauth" class="oauth-details">
+    {% block oauth %}
+    <form action="{{ authorization_url }}" method="GET">
+      <input type="submit" value="Login with {{ client_name }}" />
+    </form>
     {% endblock %}
 </div>
 
 <div id="login-footer">
+  {% block footer %}
 	<p>
 		OMERO.web {{ version }}.<br/>
 		&copy; 2007-{{ build_year }} University of Dundee &amp; Open Microscopy Environment<br/>
@@ -84,5 +87,6 @@
 
         <img src="{% static 'webgateway/img/OME_logo_grey_110.png' %}"/>
     </p>
+    {% endblock %}
 </div>
 {% endblock %}

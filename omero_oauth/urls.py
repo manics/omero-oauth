@@ -10,4 +10,8 @@ urlpatterns = patterns(
     url(r'^$', views.OauthLoginView.as_view(), name="oauth_index"),
     url(r'^callback$', views.OauthCallbackView.as_view(),
         name="oauth_callback"),
+
+    url(r'^confirm$', views.confirm, name="oauth_confirm"),
+
+    url(r'^apptoken$', views.apptoken, name="oauth_apptoken"),
 )
