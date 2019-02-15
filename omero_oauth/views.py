@@ -254,6 +254,7 @@ def get_userinfo(oauth, token):
     m = {
         'default': userinfo_default,
         'github': userinfo_github,
+        'orcid': userinfo_orcid,
     }
     userinfo = m[oauth_settings.OAUTH_USERINFO_TYPE](oauth, token)
     return userinfo
@@ -286,4 +287,28 @@ def userinfo_github(oauth, token):
         email = [e for e in emailinfo if e['primary']][0]['email']
     except IndexError:
         email = _expand_template('OAUTH_USER_EMAIL', userinfo)
+    return omename, email, firstname, lastname
+
+
+def userinfo_orcid(oauth, token):
+    from xml.etree import ElementTree
+
+    userinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO.format(**token))
+    logger.debug('Got ORCID user %s', userinfo)
+
+    namespaces = {
+        'person': 'http://www.orcid.org/ns/person',
+        'personal-details': 'http://www.orcid.org/ns/personal-details',
+    }
+    root = ElementTree.fromstring(userinfo.text)
+    person = root.findall('.//person:person/person:name', namespaces)
+    assert len(person) == 1
+    person = person[0]
+
+    omename = _expand_template('OAUTH_USER_NAME', token)
+    # Not available in public API
+    email = None
+    firstname = person.find('personal-details:given-names', namespaces).text
+    lastname = person.find('personal-details:family-name', namespaces).text
+
     return omename, email, firstname, lastname

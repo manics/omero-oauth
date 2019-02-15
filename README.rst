@@ -45,7 +45,7 @@ Configuration settings:
 - ``omero.web.oauth.url.token``: OAuth2 authorisation URL
 - ``omero.web.oauth.url.userinfo``: OAuth user information URL
 
-- ``omero.web.oauth.userinfo.type``: Method for getting user information, either ``default`` or ``github``, this may override some of the ``omero.web.oauth.user.*`` properties
+- ``omero.web.oauth.userinfo.type``: Method for getting user information, either ``default``, ``github`` or ``orcid``, values other than ``default`` may override some or all of the ``omero.web.oauth.user.*`` properties
 
 - ``omero.web.oauth.host``: OMERO.server hostname
 - ``omero.web.oauth.port``: OMERO.server port, optional, defualt ``4064``
@@ -83,9 +83,13 @@ After editing an example file you can apply the configuration:
 
 ::
 
-    $ omero load github-example.omero
+    $ omero load <type>-example.omero
+
+Example configurations for GitHub and ORCID OAuth.
+Be sure to read the comments in each file before using them.
 
 - `GitHub: github-example.omero <github-example.omero>`_
+- `ORCID: orcid-example.omero <orcid-example.omero>`_
 
 
 Development

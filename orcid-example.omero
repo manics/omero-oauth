@@ -1,0 +1,26 @@
+config append --set omero.web.apps '"omero_oauth"'
+
+config set omero.web.oauth.client.name orcid
+
+# https://support.orcid.org/hc/en-us/articles/360006897174
+config set omero.web.oauth.client.id CLIENT_ID
+config set omero.web.oauth.client.secret SECRET_ID
+
+config set omero.web.oauth.client.scope '["/authenticate"]'
+config set omero.web.oauth.userinfo.type orcid
+
+config set omero.web.oauth.url.authorization https://orcid.org/oauth/authorize
+config set omero.web.oauth.url.token https://orcid.org/oauth/token
+config set omero.web.oauth.url.userinfo https://pub.orcid.org/v2.1/{orcid}
+
+# Set these to your omero server. The admin user can be a light-admin who can
+# create users, groups, and user sessions using sudo
+config set omero.web.oauth.host OMERO.SERVER
+config set omero.web.oauth.admin.user OMERO-ADMIN
+config set omero.web.oauth.admin.password OMERO-ADMIN-PASSWORD
+
+# Template must contain {orcid}
+config set omero.web.oauth.user.name oauth-{orcid}
+
+# The group that new users will be added to
+config set omero.web.oauth.group.name orcid
