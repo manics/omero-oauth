@@ -40,6 +40,7 @@ Configuration settings:
 - ``omero.web.oauth.client.id``: Client ID, obtain this from your OAuth provider
 - ``omero.web.oauth.client.secret``: Client secret ID, provided by most OAuth providers, optional
 - ``omero.web.oauth.client.scope``: A provider dependent list of scopes, optional
+- ``omero.web.oauth.client.callbackurl``: The redirect URL passed to the OAuth2 server, strongly default is to automatically determine the URL but it is strongly recommended that you set it as many servers verify the passed URL
 
 - ``omero.web.oauth.url.authorization``: OAuth2 authorisation URL
 - ``omero.web.oauth.url.token``: OAuth2 authorisation URL

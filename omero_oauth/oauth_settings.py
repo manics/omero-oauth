@@ -30,6 +30,8 @@ OAUTH_SETTINGS_MAPPING = {
         ['OAUTH_CLIENT_SECRET', None, str_or_none, None],
     'omero.web.oauth.client.scope':
         ['OAUTH_CLIENT_SCOPE', '[]', json.loads, None],
+    'omero.web.oauth.client.callbackurl':
+        ['OAUTH_CALLBACK_URL', None, str_or_none, None],
 
     'omero.web.oauth.url.authorization':
         ['OAUTH_URL_AUTHORIZATION', '', str_not_empty, None],

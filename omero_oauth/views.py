@@ -41,7 +41,8 @@ class OauthLoginView(WebclientLoginView):
 
     def handle_not_logged_in(self, request):
         oauth = OAuth2Session(oauth_settings.OAUTH_CLIENT_ID,
-                              scope=oauth_settings.OAUTH_CLIENT_SCOPE)
+                              scope=oauth_settings.OAUTH_CLIENT_SCOPE,
+                              redirect_uri=oauth_settings.OAUTH_CALLBACK_URL)
         authorization_url, state = oauth.authorization_url(
             oauth_settings.OAUTH_URL_AUTHORIZATION)
         # state: used for CSRF protection
