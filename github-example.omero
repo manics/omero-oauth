@@ -19,5 +19,8 @@ config set omero.web.oauth.host OMERO.SERVER
 config set omero.web.oauth.admin.user OMERO-ADMIN
 config set omero.web.oauth.admin.password OMERO-ADMIN-PASSWORD
 
+# OMERO user name, template must contain {login}
+config set omero.web.oauth.user.name 'github-{login}'
+
 # The group that new users will be added to
 config set omero.web.oauth.group.name github

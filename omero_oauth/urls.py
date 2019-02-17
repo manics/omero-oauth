@@ -13,5 +13,5 @@ urlpatterns = patterns(
 
     url(r'^confirm$', views.confirm, name="oauth_confirm"),
 
-    url(r'^apptoken$', views.apptoken, name="oauth_apptoken"),
+    url(r'^sessiontoken$', views.sessiontoken, name="oauth_sessiontoken"),
 )

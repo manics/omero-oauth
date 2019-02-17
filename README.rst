@@ -67,6 +67,8 @@ Any field in the response can be used in a template:
 - ``omero.web.oauth.group.templatetime``: If ``True`` expand ``omero.web.oauth.group.name`` using ``strftime`` to enable time-based groups, default disabled
 - ``omero.web.oauth.group.perms``: Permissions on default group for new users if it doesn't exist
 
+- ``omero.web.oauth.sessiontoken.enable``: Allow new session tokens to be generated that can be used to login to an OMERO client, disabled by default
+
 Restart OMERO.web in the usual way.
 
 ::
@@ -74,7 +76,10 @@ Restart OMERO.web in the usual way.
     $ omero web restart
 
 
-Users will be able to sign-in using OAuth at http://omero.web.host/oauth.
+Users will be able to sign-in using OAuth at https://omero.web.host/oauth.
+
+Since a password isn't set it is not possible for a user to login to other OMERO clients in the usual way.
+If you set ``omero.web.oauth.sessiontoken.enable=true`` users can go to https://omero.web.host/oauth/sessiontoken to obtain a new session token.
 
 
 Configuration Examples

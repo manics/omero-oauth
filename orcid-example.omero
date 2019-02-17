@@ -19,8 +19,8 @@ config set omero.web.oauth.host OMERO.SERVER
 config set omero.web.oauth.admin.user OMERO-ADMIN
 config set omero.web.oauth.admin.password OMERO-ADMIN-PASSWORD
 
-# Template must contain {orcid}
-config set omero.web.oauth.user.name oauth-{orcid}
+# OMERO user name, template must contain {orcid}
+config set omero.web.oauth.user.name orcid-{orcid}
 
 # The group that new users will be added to
 config set omero.web.oauth.group.name orcid

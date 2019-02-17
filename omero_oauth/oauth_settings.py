@@ -71,6 +71,9 @@ OAUTH_SETTINGS_MAPPING = {
         ['OAUTH_GROUP_NAME_TEMPLATETIME', False, bool, None],
     'omero.web.oauth.group.perms':
         ['OAUTH_GROUP_PERMS', 'rw----', str_not_empty, None],
+
+    'omero.web.oauth.sessiontoken.enable':
+        ['OAUTH_SESSIONTOKEN_ENABLE', False, bool, None],
 }
 
 

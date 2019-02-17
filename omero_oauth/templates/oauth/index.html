@@ -71,9 +71,9 @@
 
 <div id="oauth" class="oauth-details">
     {% block oauth %}
-    <form action="{{ authorization_url }}" method="GET">
-      <input type="submit" value="Login with {{ client_name }}" />
-    </form>
+    <div class="buttons">
+      <a href="{{ authorization_url }}"><span class="button">Login with {{ client_name }}</span></a>
+    </div>
     {% endblock %}
 </div>
 

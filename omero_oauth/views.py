@@ -5,7 +5,11 @@ import logging
 from datetime import datetime
 
 from django.conf import settings
-from django.http import HttpResponse
+from django.core.urlresolvers import reverse
+from django.http import (
+    HttpResponse,
+    HttpResponseRedirect,
+)
 from django.template import loader as template_loader
 from django.template import RequestContext as Context
 from django.core.exceptions import PermissionDenied
@@ -117,7 +121,11 @@ class OauthCallbackView(WebclientLoginView):
                     except AttributeError:
                         upgrades_url = conn.getUpgradesUrl()
                     upgradeCheck(url=upgrades_url)
-                    return self.handle_logged_in(request, conn, connector)
+                    # super.handle_logged_in does some connection preparation
+                    # as wel as redirecting to the main page. We just want
+                    # the preparation, so discard the response
+                    self.handle_logged_in(request, conn, connector)
+                    return HttpResponseRedirect(reverse('oauth_confirm'))
                 finally:
                     conn.close(hard=False)
 
@@ -148,7 +156,7 @@ class OauthCallbackView(WebclientLoginView):
                 gid = self.get_or_create_group(adminc)
                 uid = self.create_user(
                     adminc, omename, email, firstname, lastname, gid)
-            session = self.get_session_for_user(adminc, omename)
+            session = create_session_for_user(adminc, omename)
         finally:
             adminc.close()
         return uid, session
@@ -181,19 +189,20 @@ class OauthCallbackView(WebclientLoginView):
             password=None)
         return uid
 
-    def get_session_for_user(self, adminc, omename):
-        # https://github.com/openmicroscopy/openmicroscopy/blob/v5.4.10/examples/OmeroClients/sudo.py
-        ss = adminc.c.getSession().getSessionService()
-        p = omero.sys.Principal()
-        p.name = omename
-        # p.group = 'user'
-        p.eventType = 'User'
-        # http://downloads.openmicroscopy.org/omero/5.4.10/api/slice2html/omero/api/ISession.html#createSessionWithTimeout
-        # This is the absolute timeout (relative to creation time)
-        user_session = unwrap(ss.createSessionWithTimeout(
-            p, oauth_settings.OAUTH_USER_TIMEOUT * 1000).getUuid())
-        logger.debug('Created new oauth session: %s %s', omename, user_session)
-        return user_session
+
+def create_session_for_user(adminc, omename):
+    # https://github.com/openmicroscopy/openmicroscopy/blob/v5.4.10/examples/OmeroClients/sudo.py
+    ss = adminc.c.getSession().getSessionService()
+    p = omero.sys.Principal()
+    p.name = omename
+    # p.group = 'user'
+    p.eventType = 'User'
+    # http://downloads.openmicroscopy.org/omero/5.4.10/api/slice2html/omero/api/ISession.html#createSessionWithTimeout
+    # This is the absolute timeout (relative to creation time)
+    user_session = unwrap(ss.createSessionWithTimeout(
+        p, oauth_settings.OAUTH_USER_TIMEOUT * 1000).getUuid())
+    logger.debug('Created new session: %s %s', omename, user_session)
+    return user_session
 
 
 def get_userinfo(oauth, token):
@@ -208,6 +217,8 @@ def get_userinfo(oauth, token):
 
 def _expand_template(name, args):
     template = getattr(oauth_settings, name)
+    # Replace None with ''
+    args = dict((k, v if v is not None else '') for k, v in args.items())
     return template.format(**args)
 
 
@@ -258,14 +269,13 @@ def userinfo_orcid(oauth, token):
 
     omename = _expand_template('OAUTH_USER_NAME', token)
     # Not available in public API
-    email = None
+    email = ''
     firstname = person.find('personal-details:given-names', namespaces).text
     lastname = person.find('personal-details:family-name', namespaces).text
 
     return omename, email, firstname, lastname
 
 
-# TODO: Redirect to this page after oauth login
 @login_required()
 @render_response()
 def confirm(request, **kwargs):
@@ -281,19 +291,36 @@ def confirm(request, **kwargs):
     return HttpResponse(rsp)
 
 
-# TODO: Fails with a SecurityViolation
 @login_required()
 @render_response()
-def apptoken(request, **kwargs):
+def sessiontoken(request, **kwargs):
     conn = kwargs['conn']
-    ss = conn.c.getSession().getSessionService()
-    group = conn.getDefaultGroup(conn.getUser().id)
-    new_session = ss.createUserSession(
-        oauth_settings.OAUTH_USER_TIMEOUT * 1000, 600 * 1000, group.name)
+    # createUserSession fails with a SecurityViolation
+    # create session using sudo instead
+    # ss = conn.c.getSession().getSessionService()
+    # group = conn.getDefaultGroup(conn.getUser().id)
+    # new_session = ss.createUserSession(
+    #     oauth_settings.OAUTH_USER_TIMEOUT * 1000, 600 * 1000, group.name)
+
+    adminc = OmeroWebGateway(
+        host=oauth_settings.OAUTH_HOST,
+        port=oauth_settings.OAUTH_PORT,
+        username=oauth_settings.OAUTH_ADMIN_USERNAME,
+        passwd=oauth_settings.OAUTH_ADMIN_PASSWORD,
+        secure=True)
+    if not adminc.connect():
+        raise Exception('Failed to get account '
+                        '(unable to obtain admin connection)')
+    try:
+        new_session = create_session_for_user(adminc, conn.getUser().omeName)
+    finally:
+        adminc.close()
     context = {
-        'new_session': unwrap(new_session.getUuid()),
+        'enabled': oauth_settings.OAUTH_SESSIONTOKEN_ENABLE,
     }
-    t = template_loader.get_template('oauth/apptoken.html')
+    if oauth_settings.OAUTH_SESSIONTOKEN_ENABLE:
+        context['new_session'] = new_session
+    t = template_loader.get_template('oauth/sessiontoken.html')
     c = Context(request, context)
     rsp = t.render(c)
     return HttpResponse(rsp)
