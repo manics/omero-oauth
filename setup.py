@@ -56,7 +56,7 @@ setup(name="omero-oauth",
       author_email='ome-devel@lists.openmicroscopy.org.uk',
       license='AGPL-3.0',
       url="https://gitlab.com/openmicroscopy/incubator/omero-oauth",
-      download_url='https://gitlab.com/openmicroscopy/incubator/omero-oauth/-/archive/v{version}/omero-signup-v{version}.tar.gz'.format(VERSION),  # NOQA
+      download_url='https://gitlab.com/openmicroscopy/incubator/omero-oauth/-/archive/v{version}/omero-signup-v{version}.tar.gz'.format(version=VERSION),  # NOQA
       keywords=['OMERO.web', 'plugin'],
       include_package_data=True,
       zip_safe=False,
