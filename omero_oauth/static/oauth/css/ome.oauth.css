@@ -42,8 +42,9 @@ body {
 
 #oauth {
 	width: 50em;
-	margin: 0 auto;
+	margin: 10em auto;
 	color: #333;
+	padding: 2em;
 }
 
 .oauth-details {
@@ -55,18 +56,18 @@ body {
 	overflow: hidden;
 }
 
-#oauth div {
+.oauth-details div {
 	padding: 3px;
 	clear: left;
 	overflow: hidden;
 	position: relative;
 }
 
-#oauth div.buttons {
+.oauth-details div.buttons {
 	text-align: center;
 }
 
-#oauth .button {
+.oauth-details .button {
 	cursor: pointer;
 	background-color: hsl(210,70%,60%);
 	background: linear-gradient(top, hsl(210,40%,70%) 0%,hsl(210,40%,60%) 100%);
@@ -83,16 +84,16 @@ body {
 	display: inline-block;
 }
 
-#oauth .button:hover {
+.oauth-details .button:hover {
 	background-color: hsl(210,70%,70%);
 }
 
-#oauth .altsubmit {
+.oauth-details .altsubmit {
 	margin: 1em auto;
 	text-align: center;
 }
 
-#oauth .info {
+.oauth-details .info {
 	font-size: 200%;
 	font-weight: bolder;
 	background-color: #e0e4ea;

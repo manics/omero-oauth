@@ -1,4 +1,4 @@
-{% extends "oauth/index.html" %}
+{% extends "oauth/base.html" %}
 {% load i18n %}
 
 {% comment %}
@@ -20,9 +20,6 @@
   along with this program.  If not, see <http://www.gnu.org/licenses/>.
 -->
 {% endcomment %}
-
-{% block logos %}
-{% endblock %}
 
 {% block oauth %}
 
@@ -47,8 +44,10 @@
       </a>
     </div>
     {% endif %}
+    {% if sessiontoken_enabled %}
+    <p>
+      If you want to log in using an OMERO client <a href="{% url 'oauth_sessiontoken' %}">obtain a session token here</a>.
+    </p>
+    {% endif %}
 
-{% endblock %}
-
-{% block footer %}
 {% endblock %}

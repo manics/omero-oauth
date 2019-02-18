@@ -1,4 +1,4 @@
-{% extends "oauth/base.html" %}
+{% extends "webgateway/core_html.html" %}
 {% load i18n %}
 
 {% comment %}
@@ -21,19 +21,32 @@
 -->
 {% endcomment %}
 
-{% block oauth %}
+{% block link %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static "webclient/css/layout.css"|add:url_suffix %}" type="text/css" />
+  <link rel="stylesheet" href="{% static "oauth/css/ome.oauth.css"|add:url_suffix %}" type="text/css" />
+{% endblock %}
 
-{% if sessiontoken_enabled %}
-  <p>New session token:</p>
-  <p class="info">{{ new_session }}</p>
-  <p>Use this as the username and password to log in to an OMERO client.</p>
-  <div class="buttons">
-    <a href="{% url 'webindex' %}">
-      <span class="button">Return to webclient</span>
-    </a>
-  </div>
-{% else %}
-  <p>Session token creation is disabled. Please contact your administrator.</p>
-{% endif %}
+{% block title %}
+  OMERO.web - {{ client_name }}
+{% endblock %}
+
+
+{% block script %}
+	{% include "webgateway/base/includes/script_src_jquery.html" %}
+{% endblock %}
+
+
+{% block head %}
+  {{ block.super }}
+  {% include "webgateway/base/includes/shortcut_icon.html" %}
+{% endblock %}
+
+{% block body %}
+
+<div id="oauth" class="oauth-details">
+  {% block oauth %}
+  {% endblock %}
+</div>
 
 {% endblock %}

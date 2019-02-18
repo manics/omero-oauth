@@ -138,15 +138,7 @@ class OauthCallbackView(WebclientLoginView):
 
     def get_or_create_account_and_session(self, userinfo):
         omename, email, firstname, lastname = userinfo
-        adminc = OmeroWebGateway(
-            host=oauth_settings.OAUTH_HOST,
-            port=oauth_settings.OAUTH_PORT,
-            username=oauth_settings.OAUTH_ADMIN_USERNAME,
-            passwd=oauth_settings.OAUTH_ADMIN_PASSWORD,
-            secure=True)
-        if not adminc.connect():
-            raise Exception('Failed to get account '
-                            '(unable to obtain admin connection)')
+        adminc = create_admin_conn()
         try:
             e = adminc.getObject(
                 'Experimenter', attributes={'omeName': omename})
@@ -188,6 +180,18 @@ class OauthCallbackView(WebclientLoginView):
             defaultGroupId=groupid, otherGroupIds=[],
             password=None)
         return uid
+
+
+def create_admin_conn():
+    adminc = OmeroWebGateway(
+        host=oauth_settings.OAUTH_HOST,
+        port=oauth_settings.OAUTH_PORT,
+        username=oauth_settings.OAUTH_ADMIN_USERNAME,
+        passwd=oauth_settings.OAUTH_ADMIN_PASSWORD,
+        secure=True)
+    if not adminc.connect():
+        raise Exception('Unable to obtain admin connection')
+    return adminc
 
 
 def create_session_for_user(adminc, omename):
@@ -282,8 +286,10 @@ def confirm(request, **kwargs):
     conn = kwargs['conn']
     email = conn.getUser().getEmail()
     context = {
+        'client_name': oauth_settings.OAUTH_CLIENT_NAME,
         'username': conn.getUser().getName(),
-        'email_missing': not email or not email.strip()
+        'email_missing': not email or not email.strip(),
+        'sessiontoken_enabled': oauth_settings.OAUTH_SESSIONTOKEN_ENABLE,
     }
     t = template_loader.get_template('oauth/confirm.html')
     c = Context(request, context)
@@ -302,23 +308,17 @@ def sessiontoken(request, **kwargs):
     # new_session = ss.createUserSession(
     #     oauth_settings.OAUTH_USER_TIMEOUT * 1000, 600 * 1000, group.name)
 
-    adminc = OmeroWebGateway(
-        host=oauth_settings.OAUTH_HOST,
-        port=oauth_settings.OAUTH_PORT,
-        username=oauth_settings.OAUTH_ADMIN_USERNAME,
-        passwd=oauth_settings.OAUTH_ADMIN_PASSWORD,
-        secure=True)
-    if not adminc.connect():
-        raise Exception('Failed to get account '
-                        '(unable to obtain admin connection)')
-    try:
-        new_session = create_session_for_user(adminc, conn.getUser().omeName)
-    finally:
-        adminc.close()
     context = {
-        'enabled': oauth_settings.OAUTH_SESSIONTOKEN_ENABLE,
+        'client_name': oauth_settings.OAUTH_CLIENT_NAME,
+        'sessiontoken_enabled': oauth_settings.OAUTH_SESSIONTOKEN_ENABLE,
     }
     if oauth_settings.OAUTH_SESSIONTOKEN_ENABLE:
+        adminc = create_admin_conn()
+        try:
+            new_session = create_session_for_user(
+                adminc, conn.getUser().omeName)
+        finally:
+            adminc.close()
         context['new_session'] = new_session
     t = template_loader.get_template('oauth/sessiontoken.html')
     c = Context(request, context)
