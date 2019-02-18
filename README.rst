@@ -1,5 +1,5 @@
-.. image:: https://travis-ci.org/manics/omero-oauth.svg?branch=master
-    :target: https://travis-ci.org/manics/omero-oauth
+.. image:: https://travis-ci.com/manics/omero-oauth.svg?branch=master
+    :target: https://travis-ci.com/manics/omero-oauth
 
 
 OMERO.oauth
