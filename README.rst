@@ -1,10 +1,14 @@
-.. image:: https://travis-ci.org/openmicroscopy/omero-signup.svg?branch=master
-    :target: https://travis-ci.org/openmicroscopy/omero-webtest
+.. image:: https://travis-ci.org/manics/omero-oauth.svg?branch=master
+    :target: https://travis-ci.org/manics/omero-oauth
 
 
 OMERO.oauth
 ===========
-OMERO.web app to allow OAuth2 login to OMERO.
+
+OMERO.web application to allow OAuth2 login to OMERO.
+
+This application works by using an OMERO administrative account to implement an alternative authentication method to the standard username and password.
+Ensure you review the code and understand the consequences before using this application.
 
 
 Requirements
@@ -21,7 +25,7 @@ This section assumes that an OMERO.web is already installed.
 ::
 
     $ python setup.py install
-    $ omero config append omero.web.apps '"omero_signup"'
+    $ omero config append omero.web.apps '"omero_oauth"'
 
 OMERO.web 5.4.* contains a bug that prevents login using this app.
 You will need to apply `the patch omeroweb-5.4.10-webgateway-marshal-py.patch <omeroweb-5.4.10-webgateway-marshal-py.patch>`_ to your copy of OMERO.web:
@@ -40,16 +44,16 @@ Configuration settings:
 - ``omero.web.oauth.client.id``: Client ID, obtain this from your OAuth provider
 - ``omero.web.oauth.client.secret``: Client secret ID, provided by most OAuth providers, optional
 - ``omero.web.oauth.client.scope``: A provider dependent list of scopes, optional
-- ``omero.web.oauth.client.callbackurl``: The redirect URL passed to the OAuth2 server, strongly default is to automatically determine the URL but it is strongly recommended that you set it as many servers verify the passed URL
+- ``omero.web.oauth.client.callbackurl``: The redirect URL passed to the OAuth2 server, default is to automatically determine the URL but it is strongly recommended that you set it as many servers whitelist the allowed URL
 
 - ``omero.web.oauth.url.authorization``: OAuth2 authorisation URL
-- ``omero.web.oauth.url.token``: OAuth2 authorisation URL
+- ``omero.web.oauth.url.token``: OAuth2 token URL
 - ``omero.web.oauth.url.userinfo``: OAuth user information URL
 
 - ``omero.web.oauth.userinfo.type``: Method for getting user information, either ``default``, ``github`` or ``orcid``, values other than ``default`` may override some or all of the ``omero.web.oauth.user.*`` properties
 
 - ``omero.web.oauth.host``: OMERO.server hostname
-- ``omero.web.oauth.port``: OMERO.server port, optional, defualt ``4064``
+- ``omero.web.oauth.port``: OMERO.server port, optional, default ``4064``
 - ``omero.web.oauth.admin.user``: OMERO admin username, must have permission to create groups, users, and user sessions using sudo
 - ``omero.web.oauth.admin.password``: Password for OMERO admin username
 
@@ -91,7 +95,7 @@ After editing an example file you can apply the configuration:
 
     $ omero load <type>-example.omero
 
-Example configurations for GitHub and ORCID OAuth.
+Example configuration templates are provided for GitHub and ORCID OAuth.
 Be sure to read the comments in each file before using them.
 
 - `GitHub: github-example.omero <github-example.omero>`_
