@@ -57,11 +57,12 @@ Configuration settings:
 - ``omero.web.oauth.admin.user``: OMERO admin username, must have permission to create groups, users, and user sessions using sudo
 - ``omero.web.oauth.admin.password``: Password for OMERO admin username
 
-The next 4 properties contain ``{template}`` variables which will be filled using the fields in the JSON response from. ``omero.web.oauth.url.userinfo``.
-Any field in the response can be used in a template:
+The next 4 properties contain ``{template}`` variables which will be filled using the fields in the JSON response from ``omero.web.oauth.url.userinfo``.
+Any field in the response can be used in a template.
+Note some of these properties are ignored when ``omero.web.oauth.userinfo.type`` is not ``default``:
 
 - ``omero.web.oauth.user.name``: OMERO username template, default ``oauth-{login}``. If you have other accounts on the system you must ensure accounts matching this template correspond to the OAuth user
-- ``omero.web.oauth.user.email``: OMERO Email, default ``{email}``', str, None],``
+- ``omero.web.oauth.user.email``: OMERO Email, default ``{email}``
 - ``omero.web.oauth.user.firstname``: OMERO firstname, default ``oauth``
 - ``omero.web.oauth.user.lastname``: OMERO lastname, default ``{login}``
 
@@ -82,21 +83,21 @@ Restart OMERO.web in the usual way.
 
 Users will be able to sign-in using OAuth at https://omero.web.host/oauth.
 
-Since a password isn't set it is not possible for a user to login to other OMERO clients in the usual way.
+It is not possible to login to other OMERO clients in the usual way since no password is set.
 If you set ``omero.web.oauth.sessiontoken.enable=true`` users can go to https://omero.web.host/oauth/sessiontoken to obtain a new session token.
 
 
 Configuration Examples
 ----------------------
 
+Example configuration templates are provided for GitHub and ORCID OAuth.
+Be sure to read the comments in each file before using them.
 After editing an example file you can apply the configuration:
 
 ::
 
     $ omero load <type>-example.omero
 
-Example configuration templates are provided for GitHub and ORCID OAuth.
-Be sure to read the comments in each file before using them.
 
 - `GitHub: github-example.omero <github-example.omero>`_
 - `ORCID: orcid-example.omero <orcid-example.omero>`_
