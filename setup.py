@@ -35,10 +35,12 @@ VERSION = '0.0.0'
 setup(name="omero-oauth",
       packages=find_packages(exclude=['ez_setup']),
       version=VERSION,
-      description="A Python plugin for OMERO.web",
+      description="OMERO.web OAuth2 and openid-connect plugin",
       long_description=read('README.rst'),
       install_requires=[
-          'requests_oauthlib',
+          'cryptography',
+          'pyjwt',
+          'requests_oauthlib>=1.2.0',
       ],
       classifiers=[
           'Environment :: Web Environment',
