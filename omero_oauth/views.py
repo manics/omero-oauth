@@ -37,6 +37,7 @@ import oauth_settings
 from openid import (
     jwt_token_noverify,
     jwt_token_verify,
+    openid_connect_urls,
 )
 
 
@@ -45,24 +46,42 @@ logger = logging.getLogger(__name__)
 USERAGENT = 'OMERO.oauth'
 
 
-def _oauth2_session(**kwargs):
-    """
-    Create an OAuth2Session
-    :param kwargs: Additional keyword arguments passed to OAuth2Session
-    """
-    oauth = OAuth2Session(oauth_settings.OAUTH_CLIENT_ID,
-                          scope=oauth_settings.OAUTH_CLIENT_SCOPE,
-                          redirect_uri=oauth_settings.OAUTH_CALLBACK_URL,
-                          **kwargs)
-    return oauth
+class OauthMixin(object):
+
+    def get_urls(self):
+        self.authorization_url = oauth_settings.OAUTH_URL_AUTHORIZATION
+        self.token_url = oauth_settings.OAUTH_URL_TOKEN
+        self.userinfo_url = oauth_settings.OAUTH_URL_USERINFO
+        if not all((
+                self.authorization_url, self.token_url, self.userinfo_url)):
+            authorization_url, token_url, userinfo_url = openid_connect_urls(
+                oauth_settings.OAUTH_OPENID_ISSUER)
+            if not self.authorization_url:
+                self.authorization_url = authorization_url
+            if not self.token_url:
+                self.token_url = token_url
+            if not self.userinfo_url:
+                self.userinfo_url = userinfo_url
+
+    def oauth2_session(self, **kwargs):
+        """
+        Create an OAuth2Session
+        :param kwargs: Additional keyword arguments passed to OAuth2Session
+        """
+        oauth = OAuth2Session(oauth_settings.OAUTH_CLIENT_ID,
+                              scope=oauth_settings.OAUTH_CLIENT_SCOPE,
+                              redirect_uri=oauth_settings.OAUTH_CALLBACK_URL,
+                              **kwargs)
+        return oauth
 
 
-class OauthLoginView(WebclientLoginView):
+class OauthLoginView(OauthMixin, WebclientLoginView):
 
     def handle_not_logged_in(self, request):
-        oauth = _oauth2_session()
+        self.get_urls()
+        oauth = self.oauth2_session()
         authorization_url, state = oauth.authorization_url(
-            oauth_settings.OAUTH_URL_AUTHORIZATION,
+            self.authorization_url,
             **oauth_settings.OAUTH_AUTHORIZATION_PARAMS)
         # state: used for CSRF protection
         request.session['oauth_state'] = state
@@ -86,9 +105,10 @@ class OauthLoginView(WebclientLoginView):
         raise Exception('This should never be called')
 
 
-class OauthCallbackView(WebclientLoginView):
+class OauthCallbackView(OauthMixin, WebclientLoginView):
 
     def get(self, request):
+        self.get_urls()
         state = request.session.pop('oauth_state')
         if not state:
             raise PermissionDenied('OAuth state missing')
@@ -96,14 +116,14 @@ class OauthCallbackView(WebclientLoginView):
         if not code:
             raise PermissionDenied('OAuth code missing')
 
-        oauth = _oauth2_session(state=state)
+        oauth = self.oauth2_session(state=state)
         token = oauth.fetch_token(
-            oauth_settings.OAUTH_URL_TOKEN,
+            self.token_url,
             client_secret=oauth_settings.OAUTH_CLIENT_SECRET,
             code=code)
         logger.debug('Got OAuth token %s', token)
 
-        userinfo = get_userinfo(oauth, token)
+        userinfo = get_userinfo(oauth, token, self.userinfo_url)
         logger.debug('Got userinfo %s', userinfo)
 
         uid, session = self.get_or_create_account_and_session(userinfo)
@@ -224,14 +244,15 @@ def create_session_for_user(adminc, omename):
     return user_session
 
 
-def get_userinfo(oauth, token):
+def get_userinfo(oauth, token, userinfo_url):
     m = {
         'default': userinfo_default,
         'github': userinfo_github,
         'openid': userinfo_openid,
         'orcid': userinfo_orcid,
     }
-    userinfo = m[oauth_settings.OAUTH_USERINFO_TYPE](oauth, token)
+    userinfo = m[oauth_settings.OAUTH_USERINFO_TYPE](
+        oauth, token, userinfo_url)
     return userinfo
 
 
@@ -250,19 +271,19 @@ def _expand_all(args):
     return omename, email, firstname, lastname
 
 
-def userinfo_default(oauth, token):
-    userinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO).json()
+def userinfo_default(oauth, token, userinfo_url):
+    userinfo = oauth.get(userinfo_url).json()
     logger.debug('Got raw user %s', userinfo)
     return _expand_all(userinfo)
 
 
-def userinfo_github(oauth, token):
+def userinfo_github(oauth, token, userinfo_url):
     # Note userinfo_default() will work if the user's email is public
     # otherwise we need another API call:
     # https://stackoverflow.com/a/35387123/8062212
-    userinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO).json()
+    userinfo = oauth.get(userinfo_url).json()
     logger.debug('Got GitHub user %s', userinfo)
-    emailinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO + '/emails').json()
+    emailinfo = oauth.get(userinfo_url + '/emails').json()
     logger.debug('Got GitHub emails %s', emailinfo)
 
     omename = _expand_template('OAUTH_USER_NAME', userinfo)
@@ -275,10 +296,10 @@ def userinfo_github(oauth, token):
     return omename, email, firstname, lastname
 
 
-def userinfo_orcid(oauth, token):
+def userinfo_orcid(oauth, token, userinfo_url):
     from xml.etree import ElementTree
 
-    userinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO.format(**token))
+    userinfo = oauth.get(userinfo_url.format(**token))
     logger.debug('Got ORCID user %s', userinfo)
 
     namespaces = {
@@ -299,7 +320,7 @@ def userinfo_orcid(oauth, token):
     return omename, email, firstname, lastname
 
 
-def userinfo_openid(oauth, token):
+def userinfo_openid(oauth, token, userinfo_url):
     if oauth_settings.OAUTH_OPENID_VERIFY:
         decoded = jwt_token_verify(
             token['id_token'], oauth_settings.OAUTH_CLIENT_ID,
@@ -312,7 +333,7 @@ def userinfo_openid(oauth, token):
     try:
         omename, email, firstname, lastname = _expand_all(decoded)
     except KeyError:
-        userinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO).json()
+        userinfo = oauth.get(userinfo_url).json()
         logger.debug('Got raw user %s', userinfo)
         userinfo.update(decoded)
         omename, email, firstname, lastname = _expand_all(userinfo)

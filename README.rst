@@ -54,7 +54,7 @@ Configuration settings:
 - ``omero.web.oauth.url.userinfo``: OAuth user information URL
 
 - ``omero.web.oauth.userinfo.type``: Method for getting user information, either ``default``, ``github`` or ``orcid``, values other than ``default`` may override some or all of the ``omero.web.oauth.user.*`` properties
-- ``omero.web.oauth.authorization.params``: JSON dictionary of additional parameters pass to the authorisation method
+- ``omero.web.oauth.authorization.params``: JSON dictionary of provider dependent additional parameters passed to the authorisation method
 
 - ``omero.web.oauth.host``: OMERO.server hostname
 - ``omero.web.oauth.port``: OMERO.server port, optional, default ``4064``
@@ -106,6 +106,12 @@ After editing an example file you can apply the configuration:
 - `GitHub: github-example.omero <github-example.omero>`_
 - `Google OpenID: googleopenid-example.omero <googleopenid-example.omero>`_
 - `ORCID: orcid-example.omero <orcid-example.omero>`_
+
+If you want to replace the default login page with OAuth run:
+
+::
+
+    $ omero config set omero.web.login_view oauth_index
 
 
 Development

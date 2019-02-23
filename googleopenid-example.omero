@@ -10,15 +10,17 @@ config set omero.web.oauth.client.scope '["openid", "https://www.googleapis.com/
 
 config set omero.web.oauth.userinfo.type openid
 
-config set omero.web.oauth.url.authorization https://accounts.google.com/o/oauth2/v2/auth
-config set omero.web.oauth.url.token https://oauth2.googleapis.com/token
-config set omero.web.oauth.url.userinfo https://openidconnect.googleapis.com/v1/userinfo
+# These URLs will be found using OpenID discovery, uncomment to override:
+#config set omero.web.oauth.url.authorization https://accounts.google.com/o/oauth2/v2/auth
+#config set omero.web.oauth.url.token https://oauth2.googleapis.com/token
+#config set omero.web.oauth.url.userinfo https://openidconnect.googleapis.com/v1/userinfo
 
 # force to always make user click authorize
 config set omero.web.oauth.authorization.params '{"prompt":"select_account"}'
 
-# Uncomment these two lines to enable verification
-#config set omero.web.oauth.openid.issuer https://accounts.google.com
+# OpenID issuer, required for auto-discovery
+config set omero.web.oauth.openid.issuer https://accounts.google.com
+# Uncomment to enable verification
 #config set omero.web.oauth.openid.verify true
 
 # Set these to your omero server. The admin user can be a light-admin who can

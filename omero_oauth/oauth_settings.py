@@ -39,11 +39,11 @@ OAUTH_SETTINGS_MAPPING = {
         ['OAUTH_OPENID_VERIFY', False, bool, None],
 
     'omero.web.oauth.url.authorization':
-        ['OAUTH_URL_AUTHORIZATION', '', str_not_empty, None],
+        ['OAUTH_URL_AUTHORIZATION', '', str_or_none, None],
     'omero.web.oauth.url.token':
-        ['OAUTH_URL_TOKEN', '', str_not_empty, None],
+        ['OAUTH_URL_TOKEN', '', str_or_none, None],
     'omero.web.oauth.url.userinfo':
-        ['OAUTH_URL_USERINFO', '', str_not_empty, None],
+        ['OAUTH_URL_USERINFO', '', str_or_none, None],
     'omero.web.oauth.userinfo.type':
         ['OAUTH_USERINFO_TYPE', 'default', str_not_empty, None],
     'omero.web.oauth.authorization.params':

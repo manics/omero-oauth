@@ -26,6 +26,7 @@ def _cache_get(url):
         pass
 
     r = requests.get(url)
+    r.raise_for_status()
     obj = r.json()
     httpexpiry = r.headers.get('expires')
     if httpexpiry:
@@ -44,14 +45,31 @@ class AuthException(Exception):
 def openid_connect_discover(issuer):
     """
     Fetch openid connect server metadata for auto-configuration
-    :param issuer: The issuer, e.g. https://accounts.google.com'
+    :param issuer: The issuer, e.g. 'https://accounts.google.com'
     :return dict: The openid connect server information
     """
     if not issuer:
         raise AuthException('No issuer provided')
-    autoconfig = _cache_get(
-        '{}/.well-known/openid-configuration'.format(issuer))
+    try:
+        autoconfig = _cache_get(
+            '{}/.well-known/openid-configuration'.format(issuer))
+    except Exception as e:
+        raise AuthException('OpenID discovery failed: {}'.format(e))
     return autoconfig
+
+
+def openid_connect_urls(issuer):
+    """
+    Get URLs for openid connect authentication using auto-configuration
+    :param issuer: The issuer, e.g. 'https://accounts.google.com'
+    :return tuple: A tuple of (authorization, token, userinfo) URLs
+    """
+    autoconfig = openid_connect_discover(issuer)
+    return (
+        autoconfig['authorization_endpoint'],
+        autoconfig['token_endpoint'],
+        autoconfig['userinfo_endpoint'],
+    )
 
 
 def jwt_token_verify(id_token, client_id, issuer, autoconfig=None, jwk=None):
