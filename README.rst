@@ -40,7 +40,7 @@ This bug is fixed in 5.5.0: https://github.com/openmicroscopy/openmicroscopy/pul
 
 Configuration settings:
 
-- ``omero.web.oauth.client.name``: Name of the login provider, displayed on the login page, default ``'OAuth Client``
+- ``omero.web.oauth.client.name``: Name of the login provider, displayed on the login page, default ``OAuth Client``
 - ``omero.web.oauth.client.id``: Client ID, obtain this from your OAuth provider
 - ``omero.web.oauth.client.secret``: Client secret ID, provided by most OAuth providers, optional
 - ``omero.web.oauth.client.scope``: A provider dependent list of scopes, optional
@@ -94,7 +94,7 @@ If you set ``omero.web.oauth.sessiontoken.enable=true`` users can go to https://
 Configuration Examples
 ----------------------
 
-Example configuration templates are provided for GitHub and ORCID OAuth.
+Example configuration templates are provided.
 Be sure to read the comments in each file before using them.
 After editing an example file you can apply the configuration:
 
@@ -104,6 +104,7 @@ After editing an example file you can apply the configuration:
 
 
 - `GitHub: github-example.omero <github-example.omero>`_
+- `Google OpenID: googleopenid-example.omero <googleopenid-example.omero>`_
 - `ORCID: orcid-example.omero <orcid-example.omero>`_
 
 
