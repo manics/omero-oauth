@@ -33,6 +33,11 @@ OAUTH_SETTINGS_MAPPING = {
     'omero.web.oauth.client.callbackurl':
         ['OAUTH_CALLBACK_URL', None, str_or_none, None],
 
+    'omero.web.oauth.openid.issuer':
+        ['OAUTH_OPENID_ISSUER', None, str_or_none, None],
+    'omero.web.oauth.openid.verify':
+        ['OAUTH_OPENID_VERIFY', False, bool, None],
+
     'omero.web.oauth.url.authorization':
         ['OAUTH_URL_AUTHORIZATION', '', str_not_empty, None],
     'omero.web.oauth.url.token':
@@ -41,6 +46,8 @@ OAUTH_SETTINGS_MAPPING = {
         ['OAUTH_URL_USERINFO', '', str_not_empty, None],
     'omero.web.oauth.userinfo.type':
         ['OAUTH_USERINFO_TYPE', 'default', str_not_empty, None],
+    'omero.web.oauth.authorization.params':
+        ['OAUTH_AUTHORIZATION_PARAMS', '{}', json.loads, None],
 
     'omero.web.oauth.host':
         ['OAUTH_HOST', '', str_not_empty, None],

@@ -34,6 +34,10 @@ from omeroweb.webclient.views import WebclientLoginView
 from omeroweb.webadmin.webadmin_utils import upgradeCheck
 
 import oauth_settings
+from openid import (
+    jwt_token_noverify,
+    jwt_token_verify,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -41,14 +45,25 @@ logger = logging.getLogger(__name__)
 USERAGENT = 'OMERO.oauth'
 
 
+def _oauth2_session(**kwargs):
+    """
+    Create an OAuth2Session
+    :param kwargs: Additional keyword arguments passed to OAuth2Session
+    """
+    oauth = OAuth2Session(oauth_settings.OAUTH_CLIENT_ID,
+                          scope=oauth_settings.OAUTH_CLIENT_SCOPE,
+                          redirect_uri=oauth_settings.OAUTH_CALLBACK_URL,
+                          **kwargs)
+    return oauth
+
+
 class OauthLoginView(WebclientLoginView):
 
     def handle_not_logged_in(self, request):
-        oauth = OAuth2Session(oauth_settings.OAUTH_CLIENT_ID,
-                              scope=oauth_settings.OAUTH_CLIENT_SCOPE,
-                              redirect_uri=oauth_settings.OAUTH_CALLBACK_URL)
+        oauth = _oauth2_session()
         authorization_url, state = oauth.authorization_url(
-            oauth_settings.OAUTH_URL_AUTHORIZATION)
+            oauth_settings.OAUTH_URL_AUTHORIZATION,
+            **oauth_settings.OAUTH_AUTHORIZATION_PARAMS)
         # state: used for CSRF protection
         request.session['oauth_state'] = state
 
@@ -81,7 +96,7 @@ class OauthCallbackView(WebclientLoginView):
         if not code:
             raise PermissionDenied('OAuth code missing')
 
-        oauth = OAuth2Session(oauth_settings.OAUTH_CLIENT_ID, state=state)
+        oauth = _oauth2_session(state=state)
         token = oauth.fetch_token(
             oauth_settings.OAUTH_URL_TOKEN,
             client_secret=oauth_settings.OAUTH_CLIENT_SECRET,
@@ -213,6 +228,7 @@ def get_userinfo(oauth, token):
     m = {
         'default': userinfo_default,
         'github': userinfo_github,
+        'openid': userinfo_openid,
         'orcid': userinfo_orcid,
     }
     userinfo = m[oauth_settings.OAUTH_USERINFO_TYPE](oauth, token)
@@ -226,15 +242,18 @@ def _expand_template(name, args):
     return template.format(**args)
 
 
+def _expand_all(args):
+    omename = _expand_template('OAUTH_USER_NAME', args)
+    email = _expand_template('OAUTH_USER_EMAIL', args)
+    firstname = _expand_template('OAUTH_USER_FIRSTNAME', args)
+    lastname = _expand_template('OAUTH_USER_LASTNAME', args)
+    return omename, email, firstname, lastname
+
+
 def userinfo_default(oauth, token):
     userinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO).json()
     logger.debug('Got raw user %s', userinfo)
-
-    omename = _expand_template('OAUTH_USER_NAME', userinfo)
-    email = _expand_template('OAUTH_USER_EMAIL', userinfo)
-    firstname = _expand_template('OAUTH_USER_FIRSTNAME', userinfo)
-    lastname = _expand_template('OAUTH_USER_LASTNAME', userinfo)
-    return omename, email, firstname, lastname
+    return _expand_all(userinfo)
 
 
 def userinfo_github(oauth, token):
@@ -277,6 +296,26 @@ def userinfo_orcid(oauth, token):
     firstname = person.find('personal-details:given-names', namespaces).text
     lastname = person.find('personal-details:family-name', namespaces).text
 
+    return omename, email, firstname, lastname
+
+
+def userinfo_openid(oauth, token):
+    if oauth_settings.OAUTH_OPENID_VERIFY:
+        decoded = jwt_token_verify(
+            token['id_token'], oauth_settings.OAUTH_CLIENT_ID,
+            oauth_settings.OAUTH_OPENID_ISSUER)
+    else:
+        decoded = jwt_token_noverify(token['id_token'])
+
+    # Attempt to fill fields from token, if not possible then merge in
+    # fields from userinfo
+    try:
+        omename, email, firstname, lastname = _expand_all(decoded)
+    except KeyError:
+        userinfo = oauth.get(oauth_settings.OAUTH_URL_USERINFO).json()
+        logger.debug('Got raw user %s', userinfo)
+        userinfo.update(decoded)
+        omename, email, firstname, lastname = _expand_all(userinfo)
     return omename, email, firstname, lastname
 
 

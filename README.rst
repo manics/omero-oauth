@@ -46,11 +46,15 @@ Configuration settings:
 - ``omero.web.oauth.client.scope``: A provider dependent list of scopes, optional
 - ``omero.web.oauth.client.callbackurl``: The redirect URL passed to the OAuth2 server, default is to automatically determine the URL but it is strongly recommended that you set it as many servers whitelist the allowed URL
 
+- ``omero.web.oauth.openid.issuer``: The issuer when using OpenID, required if verification is enabled, issuer must support OpenID Connect Discovery
+- ``omero.web.oauth.openid.verify``: If ``true`` verify the OpenID token, default ``false`` since requests are made over HTTPS which is sufficient to verify the provider.
+
 - ``omero.web.oauth.url.authorization``: OAuth2 authorisation URL
 - ``omero.web.oauth.url.token``: OAuth2 token URL
 - ``omero.web.oauth.url.userinfo``: OAuth user information URL
 
 - ``omero.web.oauth.userinfo.type``: Method for getting user information, either ``default``, ``github`` or ``orcid``, values other than ``default`` may override some or all of the ``omero.web.oauth.user.*`` properties
+- ``omero.web.oauth.authorization.params``: JSON dictionary of additional parameters pass to the authorisation method
 
 - ``omero.web.oauth.host``: OMERO.server hostname
 - ``omero.web.oauth.port``: OMERO.server port, optional, default ``4064``
