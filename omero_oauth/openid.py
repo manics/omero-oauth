@@ -89,6 +89,7 @@ def jwt_token_verify(id_token, client_id, issuer, autoconfig=None, jwk=None):
     :raises Exception: If verification failed
     """
     # https://pyjwt.readthedocs.io/en/latest/usage.html
+    # https://openid.net/specs/openid-connect-core-1_0.html#IDToken
 
     if not jwk:
         header = jwt.get_unverified_header(id_token)

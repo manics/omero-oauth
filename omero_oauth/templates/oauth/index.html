@@ -23,8 +23,6 @@
 
 {% block link %}
     {{ block.super }}
-    <link rel="stylesheet" href="{% static "webclient/css/layout.css"|add:url_suffix %}" type="text/css" />
-    <link rel="stylesheet" href="{% static "webgateway/css/ome.login.css"|add:url_suffix %}" type="text/css" />
     <link rel="stylesheet" href="{% static "oauth/css/ome.oauth.css"|add:url_suffix %}" type="text/css" />
 {% endblock %}
 
@@ -34,9 +32,11 @@
 
 
 {% block login %}
-  <div class="oauth-details">
-    <div class="buttons">
-      <a href="{{ authorization_url }}"><span class="button">Login with {{ client_name }}</span></a>
-    </div>
-  </div>
+<div id="#oauth">
+  <form class="oauth-details" action="{% url 'oauth_index' %}" method="post">{% csrf_token %}
+    {% for name, displayname in auth_providers.items %}
+    <input id="test" type="submit" class="button" name="{{ name }}" value="Login with {{ displayname }}" />
+    {% endfor %}
+  </form>
+</div>
 {% endblock %}

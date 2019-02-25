@@ -40,7 +40,26 @@ This bug is fixed in 5.5.0: https://github.com/openmicroscopy/openmicroscopy/pul
 
 Configuration settings:
 
-- ``omero.web.oauth.client.name``: Name of the login provider, displayed on the login page, default ``OAuth Client``
+- ``omero.web.oauth.display.name``: Name of the login page, default ``OAuth Client``
+
+- ``omero.web.oauth.host``: OMERO.server hostname
+- ``omero.web.oauth.port``: OMERO.server port, optional, default ``4064``
+- ``omero.web.oauth.admin.user``: OMERO admin username, must have permission to create groups, users, and user sessions using sudo
+- ``omero.web.oauth.admin.password``: Password for OMERO admin username
+
+- ``omero.web.oauth.user.timeout``: Maximum session length in seconds, default ``86400``
+
+- ``omero.web.oauth.group.name``: Default group for new users, will be created if it doesn't exist
+- ``omero.web.oauth.group.templatetime``: If ``True`` expand ``omero.web.oauth.group.name`` using ``strftime`` to enable time-based groups, default disabled
+- ``omero.web.oauth.group.perms``: Permissions on default group for new users if it doesn't exist
+
+- ``omero.web.oauth.sessiontoken.enable``: Allow new session tokens to be generated that can be used to login to an OMERO client, disabled by default
+
+Old settings, replaced with JSON:
+
+- ``omero.web.oauth.providers``: Either a JSON object containing the full OAuth provider configuration,
+    or a JSON list of files in JSON or YAML format containing a dictionary that will be merged
+
 - ``omero.web.oauth.client.id``: Client ID, obtain this from your OAuth provider
 - ``omero.web.oauth.client.secret``: Client secret ID, provided by most OAuth providers, optional
 - ``omero.web.oauth.client.scope``: A provider dependent list of scopes, optional
@@ -56,11 +75,6 @@ Configuration settings:
 - ``omero.web.oauth.userinfo.type``: Method for getting user information, either ``default``, ``github`` or ``orcid``, values other than ``default`` may override some or all of the ``omero.web.oauth.user.*`` properties
 - ``omero.web.oauth.authorization.params``: JSON dictionary of provider dependent additional parameters passed to the authorisation method
 
-- ``omero.web.oauth.host``: OMERO.server hostname
-- ``omero.web.oauth.port``: OMERO.server port, optional, default ``4064``
-- ``omero.web.oauth.admin.user``: OMERO admin username, must have permission to create groups, users, and user sessions using sudo
-- ``omero.web.oauth.admin.password``: Password for OMERO admin username
-
 The next 4 properties contain ``{template}`` variables which will be filled using the fields in the JSON response from ``omero.web.oauth.url.userinfo``.
 Any field in the response can be used in a template.
 Note some of these properties are ignored when ``omero.web.oauth.userinfo.type`` is not ``default``:
@@ -69,14 +83,6 @@ Note some of these properties are ignored when ``omero.web.oauth.userinfo.type``
 - ``omero.web.oauth.user.email``: OMERO Email, default ``{email}``
 - ``omero.web.oauth.user.firstname``: OMERO firstname, default ``oauth``
 - ``omero.web.oauth.user.lastname``: OMERO lastname, default ``{login}``
-
-- ``omero.web.oauth.user.timeout``: Maximum session length in seconds, default ``86400``
-
-- ``omero.web.oauth.group.name``: Default group for new users, will be created if it doesn't exist
-- ``omero.web.oauth.group.templatetime``: If ``True`` expand ``omero.web.oauth.group.name`` using ``strftime`` to enable time-based groups, default disabled
-- ``omero.web.oauth.group.perms``: Permissions on default group for new users if it doesn't exist
-
-- ``omero.web.oauth.sessiontoken.enable``: Allow new session tokens to be generated that can be used to login to an OMERO client, disabled by default
 
 Restart OMERO.web in the usual way.
 

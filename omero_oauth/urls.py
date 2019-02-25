@@ -8,8 +8,8 @@ urlpatterns = patterns(
     'django.views.generic.simple',
 
     url(r'^$', views.OauthLoginView.as_view(), name="oauth_index"),
-    url(r'^callback$', views.OauthCallbackView.as_view(),
-        name="oauth_callback"),
+    url(r'^callback/(?P<name>[a-z][a-z0-9]+)$',
+        views.OauthCallbackView.as_view(), name="oauth_callback"),
 
     url(r'^confirm$', views.confirm, name="oauth_confirm"),
 

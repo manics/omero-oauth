@@ -1,5 +1,7 @@
 import json
+import re
 import sys
+import yaml
 from omeroweb.settings import process_custom_settings, report_settings
 
 
@@ -16,38 +18,54 @@ def str_or_none(o):
     return o
 
 
-# authorization: https://github.com/login/oauth/authorize
-# token: https://github.com/login/oauth/access_token
-# userinfo: https://api.github.com/user
+# https://github.com/jupyterhub/zero-to-jupyterhub-k8s/blob/0.8.0/images/hub/z2jh.py#L33-L47
+def _merge_dictionaries(a, b):
+    merged = a.copy()
+    for key in b:
+        if key in a:
+            if isinstance(a[key], dict) and isinstance(b[key], dict):
+                merged[key] = _merge_dictionaries(a[key], b[key])
+            else:
+                merged[key] = b[key]
+        else:
+            merged[key] = b[key]
+    return merged
+
+
+def json_oauth_str_or_files(o):
+    """
+    :param o: either:
+        - A JSON object containing the full OAuth provider configuration
+        - A JSON list files in JSON or YAML format containing a dictionary
+          that will be merged
+    """
+    dict_or_list = json.loads(o)
+    if isinstance(dict_or_list, list):
+        cfg = {}
+        for cfgfile in dict_or_list:
+            with open(cfgfile) as f:
+                if cfgfile.endswith('.yml') or cfgfile.endswith('.yaml'):
+                    d = yaml.load(f)
+                else:
+                    d = json.load(f)
+            cfg = _merge_dictionaries(cfg, d)
+    else:
+        cfg = json.loads(o)
+    for key in cfg:
+        if not re.match('[a-z][a-z0-9]+$', key):
+            raise ValueError('Invalid section name: {}'.format(key))
+    return cfg
+
 
 # load settings
 OAUTH_SETTINGS_MAPPING = {
-    'omero.web.oauth.client.name':
-        ['OAUTH_CLIENT_NAME', 'OAuth Client', str, None],
-    'omero.web.oauth.client.id':
-        ['OAUTH_CLIENT_ID', None, str_or_none, None],
-    'omero.web.oauth.client.secret':
-        ['OAUTH_CLIENT_SECRET', None, str_or_none, None],
-    'omero.web.oauth.client.scope':
-        ['OAUTH_CLIENT_SCOPE', '[]', json.loads, None],
-    'omero.web.oauth.client.callbackurl':
-        ['OAUTH_CALLBACK_URL', None, str_or_none, None],
+    'omero.web.oauth.providers':
+        ['OAUTH_PROVIDERS', '{}', json_oauth_str_or_files, None],
 
-    'omero.web.oauth.openid.issuer':
-        ['OAUTH_OPENID_ISSUER', None, str_or_none, None],
-    'omero.web.oauth.openid.verify':
-        ['OAUTH_OPENID_VERIFY', False, bool, None],
-
-    'omero.web.oauth.url.authorization':
-        ['OAUTH_URL_AUTHORIZATION', '', str_or_none, None],
-    'omero.web.oauth.url.token':
-        ['OAUTH_URL_TOKEN', '', str_or_none, None],
-    'omero.web.oauth.url.userinfo':
-        ['OAUTH_URL_USERINFO', '', str_or_none, None],
-    'omero.web.oauth.userinfo.type':
-        ['OAUTH_USERINFO_TYPE', 'default', str_not_empty, None],
-    'omero.web.oauth.authorization.params':
-        ['OAUTH_AUTHORIZATION_PARAMS', '{}', json.loads, None],
+    'omero.web.oauth.display.name':
+        ['OAUTH_DISPLAY_NAME', 'OAuth Client', str, None],
+    # 'omero.web.oauth.baseurl':
+    #     ['OAUTH_BASEURL', None, str_not_empty, None],
 
     'omero.web.oauth.host':
         ['OAUTH_HOST', '', str_not_empty, None],
@@ -57,17 +75,6 @@ OAUTH_SETTINGS_MAPPING = {
         ['OAUTH_ADMIN_USERNAME', '', str_not_empty, None],
     'omero.web.oauth.admin.password':
         ['OAUTH_ADMIN_PASSWORD', '', str_not_empty, None],
-
-    # {templates} are expanded using fields in userinfo
-    # These may be ignored if omero.web.oauth.userinfo.type is not default
-    'omero.web.oauth.user.name':
-        ['OAUTH_USER_NAME', 'oauth-{login}', str_not_empty, None],
-    'omero.web.oauth.user.email':
-        ['OAUTH_USER_EMAIL', '{email}', str, None],
-    'omero.web.oauth.user.firstname':
-        ['OAUTH_USER_FIRSTNAME', 'oauth', str_not_empty, None],
-    'omero.web.oauth.user.lastname':
-        ['OAUTH_USER_LASTNAME', '{login}', str_not_empty, None],
 
     'omero.web.oauth.user.timeout':
         ['OAUTH_USER_TIMEOUT', 86400, int, None],

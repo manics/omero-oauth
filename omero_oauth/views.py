@@ -14,8 +14,6 @@ from django.template import loader as template_loader
 from django.template import RequestContext as Context
 from django.core.exceptions import PermissionDenied
 
-from requests_oauthlib import OAuth2Session
-
 import omero
 from omero.rtypes import unwrap
 from omeroweb.decorators import get_client_ip
@@ -34,10 +32,9 @@ from omeroweb.webclient.views import WebclientLoginView
 from omeroweb.webadmin.webadmin_utils import upgradeCheck
 
 import oauth_settings
-from openid import (
-    jwt_token_noverify,
-    jwt_token_verify,
-    openid_connect_urls,
+from providers import (
+    OauthProvider,
+    providers,
 )
 
 
@@ -46,51 +43,15 @@ logger = logging.getLogger(__name__)
 USERAGENT = 'OMERO.oauth'
 
 
-class OauthMixin(object):
-
-    def get_urls(self):
-        self.authorization_url = oauth_settings.OAUTH_URL_AUTHORIZATION
-        self.token_url = oauth_settings.OAUTH_URL_TOKEN
-        self.userinfo_url = oauth_settings.OAUTH_URL_USERINFO
-        if not all((
-                self.authorization_url, self.token_url, self.userinfo_url)):
-            authorization_url, token_url, userinfo_url = openid_connect_urls(
-                oauth_settings.OAUTH_OPENID_ISSUER)
-            if not self.authorization_url:
-                self.authorization_url = authorization_url
-            if not self.token_url:
-                self.token_url = token_url
-            if not self.userinfo_url:
-                self.userinfo_url = userinfo_url
-
-    def oauth2_session(self, **kwargs):
-        """
-        Create an OAuth2Session
-        :param kwargs: Additional keyword arguments passed to OAuth2Session
-        """
-        oauth = OAuth2Session(oauth_settings.OAUTH_CLIENT_ID,
-                              scope=oauth_settings.OAUTH_CLIENT_SCOPE,
-                              redirect_uri=oauth_settings.OAUTH_CALLBACK_URL,
-                              **kwargs)
-        return oauth
-
-
-class OauthLoginView(OauthMixin, WebclientLoginView):
+class OauthLoginView(WebclientLoginView):
 
     def handle_not_logged_in(self, request):
-        self.get_urls()
-        oauth = self.oauth2_session()
-        authorization_url, state = oauth.authorization_url(
-            self.authorization_url,
-            **oauth_settings.OAUTH_AUTHORIZATION_PARAMS)
-        # state: used for CSRF protection
-        request.session['oauth_state'] = state
-
+        auth_providers = providers()
         context = {
             'version': omero_version,
             'build_year': build_year,
-            'authorization_url': authorization_url,
-            'client_name': oauth_settings.OAUTH_CLIENT_NAME
+            'auth_providers': auth_providers,
+            'client_name': oauth_settings.OAUTH_DISPLAY_NAME,
         }
         if hasattr(settings, 'LOGIN_LOGO'):
             context['LOGIN_LOGO'] = settings.LOGIN_LOGO
@@ -100,15 +61,25 @@ class OauthLoginView(OauthMixin, WebclientLoginView):
         rsp = t.render(c)
         return HttpResponse(rsp)
 
-    def post(self):
-        # Disable super method
-        raise Exception('This should never be called')
+    def post(self, request):
+        oauth = None
+        for name in providers():
+            if request.POST.get(name):
+                oauth = OauthProvider(name)
+                break
+        if not oauth:
+            raise PermissionDenied('Invalid provider: {}'.format(name))
+
+        authorization_url, state = oauth.authorization()
+        # state: used for CSRF protection
+        request.session['oauth_state'] = state
+        logger.debug('OAuth provider: %s', name)
+        return HttpResponseRedirect(authorization_url)
 
 
-class OauthCallbackView(OauthMixin, WebclientLoginView):
+class OauthCallbackView(WebclientLoginView):
 
-    def get(self, request):
-        self.get_urls()
+    def get(self, request, name):
         state = request.session.pop('oauth_state')
         if not state:
             raise PermissionDenied('OAuth state missing')
@@ -116,14 +87,11 @@ class OauthCallbackView(OauthMixin, WebclientLoginView):
         if not code:
             raise PermissionDenied('OAuth code missing')
 
-        oauth = self.oauth2_session(state=state)
-        token = oauth.fetch_token(
-            self.token_url,
-            client_secret=oauth_settings.OAUTH_CLIENT_SECRET,
-            code=code)
+        oauth = OauthProvider(name, state=state)
+        token = oauth.token(code)
         logger.debug('Got OAuth token %s', token)
 
-        userinfo = get_userinfo(oauth, token, self.userinfo_url)
+        userinfo = oauth.get_userinfo(token)
         logger.debug('Got userinfo %s', userinfo)
 
         uid, session = self.get_or_create_account_and_session(userinfo)
@@ -169,7 +137,7 @@ class OauthCallbackView(OauthMixin, WebclientLoginView):
 
     def post(self):
         # Disable super method
-        raise Exception('This should never be called')
+        raise PermissionDenied('POST not allowed')
 
     def get_or_create_account_and_session(self, userinfo):
         omename, email, firstname, lastname = userinfo
@@ -244,109 +212,13 @@ def create_session_for_user(adminc, omename):
     return user_session
 
 
-def get_userinfo(oauth, token, userinfo_url):
-    m = {
-        'default': userinfo_default,
-        'github': userinfo_github,
-        'openid': userinfo_openid,
-        'orcid': userinfo_orcid,
-    }
-    userinfo = m[oauth_settings.OAUTH_USERINFO_TYPE](
-        oauth, token, userinfo_url)
-    return userinfo
-
-
-def _expand_template(name, args):
-    template = getattr(oauth_settings, name)
-    # Replace None with ''
-    args = dict((k, v if v is not None else '') for k, v in args.items())
-    return template.format(**args)
-
-
-def _expand_all(args):
-    omename = _expand_template('OAUTH_USER_NAME', args)
-    email = _expand_template('OAUTH_USER_EMAIL', args)
-    firstname = _expand_template('OAUTH_USER_FIRSTNAME', args)
-    lastname = _expand_template('OAUTH_USER_LASTNAME', args)
-    return omename, email, firstname, lastname
-
-
-def userinfo_default(oauth, token, userinfo_url):
-    userinfo = oauth.get(userinfo_url).json()
-    logger.debug('Got raw user %s', userinfo)
-    return _expand_all(userinfo)
-
-
-def userinfo_github(oauth, token, userinfo_url):
-    # Note userinfo_default() will work if the user's email is public
-    # otherwise we need another API call:
-    # https://stackoverflow.com/a/35387123/8062212
-    userinfo = oauth.get(userinfo_url).json()
-    logger.debug('Got GitHub user %s', userinfo)
-    emailinfo = oauth.get(userinfo_url + '/emails').json()
-    logger.debug('Got GitHub emails %s', emailinfo)
-
-    omename = _expand_template('OAUTH_USER_NAME', userinfo)
-    firstname = _expand_template('OAUTH_USER_FIRSTNAME', userinfo)
-    lastname = _expand_template('OAUTH_USER_LASTNAME', userinfo)
-    try:
-        email = [e for e in emailinfo if e['primary']][0]['email']
-    except IndexError:
-        email = _expand_template('OAUTH_USER_EMAIL', userinfo)
-    return omename, email, firstname, lastname
-
-
-def userinfo_orcid(oauth, token, userinfo_url):
-    from xml.etree import ElementTree
-
-    userinfo = oauth.get(userinfo_url.format(**token))
-    logger.debug('Got ORCID user %s', userinfo)
-
-    namespaces = {
-        'person': 'http://www.orcid.org/ns/person',
-        'personal-details': 'http://www.orcid.org/ns/personal-details',
-    }
-    root = ElementTree.fromstring(userinfo.text)
-    person = root.findall('.//person:person/person:name', namespaces)
-    assert len(person) == 1
-    person = person[0]
-
-    omename = _expand_template('OAUTH_USER_NAME', token)
-    # Not available in public API
-    email = ''
-    firstname = person.find('personal-details:given-names', namespaces).text
-    lastname = person.find('personal-details:family-name', namespaces).text
-
-    return omename, email, firstname, lastname
-
-
-def userinfo_openid(oauth, token, userinfo_url):
-    if oauth_settings.OAUTH_OPENID_VERIFY:
-        decoded = jwt_token_verify(
-            token['id_token'], oauth_settings.OAUTH_CLIENT_ID,
-            oauth_settings.OAUTH_OPENID_ISSUER)
-    else:
-        decoded = jwt_token_noverify(token['id_token'])
-
-    # Attempt to fill fields from token, if not possible then merge in
-    # fields from userinfo
-    try:
-        omename, email, firstname, lastname = _expand_all(decoded)
-    except KeyError:
-        userinfo = oauth.get(userinfo_url).json()
-        logger.debug('Got raw user %s', userinfo)
-        userinfo.update(decoded)
-        omename, email, firstname, lastname = _expand_all(userinfo)
-    return omename, email, firstname, lastname
-
-
 @login_required()
 @render_response()
 def confirm(request, **kwargs):
     conn = kwargs['conn']
     email = conn.getUser().getEmail()
     context = {
-        'client_name': oauth_settings.OAUTH_CLIENT_NAME,
+        'client_name': oauth_settings.OAUTH_DISPLAY_NAME,
         'username': conn.getUser().getName(),
         'email_missing': not email or not email.strip(),
         'sessiontoken_enabled': oauth_settings.OAUTH_SESSIONTOKEN_ENABLE,
@@ -369,7 +241,7 @@ def sessiontoken(request, **kwargs):
     #     oauth_settings.OAUTH_USER_TIMEOUT * 1000, 600 * 1000, group.name)
 
     context = {
-        'client_name': oauth_settings.OAUTH_CLIENT_NAME,
+        'client_name': oauth_settings.OAUTH_DISPLAY_NAME,
         'sessiontoken_enabled': oauth_settings.OAUTH_SESSIONTOKEN_ENABLE,
     }
     if oauth_settings.OAUTH_SESSIONTOKEN_ENABLE:
