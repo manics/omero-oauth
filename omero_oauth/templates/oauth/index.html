@@ -34,7 +34,7 @@
 {% block login %}
 <div id="#oauth">
   <form class="oauth-details" action="{% url 'oauth_index' %}" method="post">{% csrf_token %}
-    {% for name, displayname in auth_providers.items %}
+    {% for name, displayname in auth_providers %}
     <input id="test" type="submit" class="button" name="{{ name }}" value="Login with {{ displayname }}" />
     {% endfor %}
   </form>

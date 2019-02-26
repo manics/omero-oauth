@@ -19,13 +19,13 @@ USERAGENT = 'OMERO.oauth'
 
 
 def providers():
-    d = {}
-    for name, value in oauth_settings.OAUTH_PROVIDERS.items():
+    ps = []
+    for cfg in oauth_settings.OAUTH_PROVIDERS['providers']:
         try:
-            d[name] = value['displayname']
+            ps.append((cfg['name'], cfg['displayname']))
         except KeyError:
-            d[name] = name
-    return d
+            ps.append((cfg['name'], cfg['name']))
+    return ps
 
 
 class OauthProvider(object):
@@ -37,7 +37,13 @@ class OauthProvider(object):
         :param kwargs: Additional keyword arguments passed to OAuth2Session
         """
         self.name = name
-        self.cfg = oauth_settings.OAUTH_PROVIDERS[name]
+        for item in oauth_settings.OAUTH_PROVIDERS['providers']:
+            if item['name'] == name:
+                cfg = item
+                break
+        if not cfg:
+            raise ValueError('No configuration found for: {}'.format(name))
+        self.cfg = cfg
         self._get_urls()
         print('client.scopes', self.get('client.scopes'))
         self.oauth = OAuth2Session(self.get('client.id'),

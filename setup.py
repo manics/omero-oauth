@@ -38,6 +38,7 @@ setup(name="omero-oauth",
       description="OMERO.web OAuth2 and openid-connect plugin",
       long_description=read('README.rst'),
       install_requires=[
+          'cerberus>=1.2,<2',
           'cryptography',
           'pyjwt',
           'requests_oauthlib>=1.2.0',

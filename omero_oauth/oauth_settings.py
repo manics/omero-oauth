@@ -1,7 +1,8 @@
 import json
-import re
 import sys
 import yaml
+from cerberus import Validator
+from pkgutil import get_data
 from omeroweb.settings import process_custom_settings, report_settings
 
 
@@ -32,35 +33,33 @@ def _merge_dictionaries(a, b):
     return merged
 
 
-def json_oauth_str_or_files(o):
+def oauth_provider_config(o):
     """
     :param o: either:
         - A JSON object containing the full OAuth provider configuration
-        - A JSON list files in JSON or YAML format containing a dictionary
-          that will be merged
+        - A JSON or YAML file containing a dictionary that will be merged
     """
-    dict_or_list = json.loads(o)
-    if isinstance(dict_or_list, list):
-        cfg = {}
-        for cfgfile in dict_or_list:
-            with open(cfgfile) as f:
-                if cfgfile.endswith('.yml') or cfgfile.endswith('.yaml'):
-                    d = yaml.load(f)
-                else:
-                    d = json.load(f)
-            cfg = _merge_dictionaries(cfg, d)
-    else:
+    try:
         cfg = json.loads(o)
-    for key in cfg:
-        if not re.match('[a-z][a-z0-9]+$', key):
-            raise ValueError('Invalid section name: {}'.format(key))
+    except ValueError:
+        cfgfile = o
+        with open(cfgfile) as f:
+            if cfgfile.endswith('.yml') or cfgfile.endswith('.yaml'):
+                cfg = yaml.load(f)
+            else:
+                cfg = json.load(f)
+    schemastr = get_data('omero_oauth', 'schema/provider-schema.yaml')
+    schema = yaml.load(schemastr)
+    v = Validator(schema)
+    if not v.validate(cfg):
+        raise ValueError('Invalid provider configuration: {}'.format(v.errors))
     return cfg
 
 
 # load settings
 OAUTH_SETTINGS_MAPPING = {
     'omero.web.oauth.providers':
-        ['OAUTH_PROVIDERS', '{}', json_oauth_str_or_files, None],
+        ['OAUTH_PROVIDERS', '{}', oauth_provider_config, None],
 
     'omero.web.oauth.display.name':
         ['OAUTH_DISPLAY_NAME', 'OAuth Client', str, None],

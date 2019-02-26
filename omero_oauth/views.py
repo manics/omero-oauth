@@ -63,7 +63,7 @@ class OauthLoginView(WebclientLoginView):
 
     def post(self, request):
         oauth = None
-        for name in providers():
+        for (name, displayname) in providers():
             if request.POST.get(name):
                 oauth = OauthProvider(name)
                 break

@@ -1,0 +1,77 @@
+---
+# Cerberos schema for provider configuration file
+
+providers:
+  type: list
+  required: true
+  schema:
+    type: dict
+    schema:
+      name:
+        type: string
+        regex: '^[a-z][a-z0-9]+$'
+        required: true
+      displayname:
+        type: string
+      url:
+        type: dict
+        required: true
+        schema:
+          authorisation:
+            type: string
+          token:
+            type: string
+          userinfo:
+            type: string
+          callback:
+            type: string
+            empty: false
+            required: true
+
+      client:
+        type: dict
+        schema:
+          id:
+            type: string
+            required: true
+          secret:
+            type: string
+          scopes:
+            type: list
+            schema:
+              type: string
+
+      openid:
+        type: dict
+        schema:
+          issuer:
+            type: string
+          verify:
+            type: boolean
+
+      authorization:
+        type: dict
+        schema:
+          params:
+            type: dict
+
+      userinfo:
+        type: dict
+        schema:
+          type:
+            type: string
+            default: default
+            required: true
+            empty: false
+
+      user:
+        type: dict
+        schema:
+          name:
+            type: string
+          email:
+            type: string
+          firstname:
+            type: string
+          lastname:
+            type: string
