@@ -1,0 +1,28 @@
+---
+providers:
+
+  ######################################################################
+  # Hydra Test OpenID
+  - name: hydra
+    displayname: Hydra Test OAuth
+    url:
+      callback: http://localhost:4080/oauth/callback/hydra
+
+    client:
+      id: CLIENT_ID
+      secret: CLIENT_SECRET
+      scopes:
+        - openid
+
+    openid:
+      issuer:  http://localhost:4444
+      #verify: true
+
+    userinfo:
+      type: openid
+
+    user:
+      name: 'hydra-{sub}'
+      email: '{sub}'
+      firstname: 'hydra'
+      lastname: '{sub}'
