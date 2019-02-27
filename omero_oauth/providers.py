@@ -45,7 +45,6 @@ class OauthProvider(object):
             raise ValueError('No configuration found for: {}'.format(name))
         self.cfg = cfg
         self._get_urls()
-        print('client.scopes', self.get('client.scopes'))
         self.oauth = OAuth2Session(self.get('client.id'),
                                    scope=self.get('client.scopes'),
                                    redirect_uri=self.get('url.callback'),

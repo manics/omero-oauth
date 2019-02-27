@@ -55,34 +55,11 @@ Configuration settings:
 
 - ``omero.web.oauth.sessiontoken.enable``: Allow new session tokens to be generated that can be used to login to an OMERO client, disabled by default
 
-Old settings, replaced with JSON:
+OAuth2 provider settings:
 
-- ``omero.web.oauth.providers``: Either a JSON object containing the full OAuth provider configuration,
-    or a JSON list of files in JSON or YAML format containing a dictionary that will be merged
+- ``omero.web.oauth.providers``: Either a JSON object containing the full OAuth provider configuration ``{ "providers:" [ ...] }``, or a file-path to the configuration file in either JSON or YAML format.
+  `See the schema for details on each field. <omero_oauth/schema/provider-schema.yaml>`_
 
-- ``omero.web.oauth.client.id``: Client ID, obtain this from your OAuth provider
-- ``omero.web.oauth.client.secret``: Client secret ID, provided by most OAuth providers, optional
-- ``omero.web.oauth.client.scope``: A provider dependent list of scopes, optional
-- ``omero.web.oauth.client.callbackurl``: The redirect URL passed to the OAuth2 server, default is to automatically determine the URL but it is strongly recommended that you set it as many servers whitelist the allowed URL
-
-- ``omero.web.oauth.openid.issuer``: The issuer when using OpenID, required if verification is enabled, issuer must support OpenID Connect Discovery
-- ``omero.web.oauth.openid.verify``: If ``true`` verify the OpenID token, default ``false`` since requests are made over HTTPS which is sufficient to verify the provider.
-
-- ``omero.web.oauth.url.authorization``: OAuth2 authorisation URL
-- ``omero.web.oauth.url.token``: OAuth2 token URL
-- ``omero.web.oauth.url.userinfo``: OAuth user information URL
-
-- ``omero.web.oauth.userinfo.type``: Method for getting user information, either ``default``, ``github`` or ``orcid``, values other than ``default`` may override some or all of the ``omero.web.oauth.user.*`` properties
-- ``omero.web.oauth.authorization.params``: JSON dictionary of provider dependent additional parameters passed to the authorisation method
-
-The next 4 properties contain ``{template}`` variables which will be filled using the fields in the JSON response from ``omero.web.oauth.url.userinfo``.
-Any field in the response can be used in a template.
-Note some of these properties are ignored when ``omero.web.oauth.userinfo.type`` is not ``default``:
-
-- ``omero.web.oauth.user.name``: OMERO username template, default ``oauth-{login}``. If you have other accounts on the system you must ensure accounts matching this template correspond to the OAuth user
-- ``omero.web.oauth.user.email``: OMERO Email, default ``{email}``
-- ``omero.web.oauth.user.firstname``: OMERO firstname, default ``oauth``
-- ``omero.web.oauth.user.lastname``: OMERO lastname, default ``{login}``
 
 Restart OMERO.web in the usual way.
 
@@ -100,24 +77,19 @@ If you set ``omero.web.oauth.sessiontoken.enable=true`` users can go to https://
 Configuration Examples
 ----------------------
 
-Example configuration templates are provided.
-Be sure to read the comments in each file before using them.
-After editing an example file you can apply the configuration:
+An example provider configuration with three providers is provided, along with an example OMERO.web configuration file.
+Be sure to read the comments in the files before using them.
+
+After editing the example files you can copy the provider configuration and apply the example omero-web configuration:
 
 ::
 
-    $ omero load <type>-example.omero
+    $ cp multi-example.yaml /opt/omero/web/config/oauth-providers.yaml
+    $ omero load config-example.omero
 
 
-- `GitHub: github-example.omero <github-example.omero>`_
-- `Google OpenID: googleopenid-example.omero <googleopenid-example.omero>`_
-- `ORCID: orcid-example.omero <orcid-example.omero>`_
-
-If you want to replace the default login page with OAuth run:
-
-::
-
-    $ omero config set omero.web.login_view oauth_index
+- `Provider configuration multi-example.yaml <multi-example.yaml>`_
+- `OMERO.web configuration omeroweb-config.omero <omeroweb-config.omero>`_
 
 
 Development

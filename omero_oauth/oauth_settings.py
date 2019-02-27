@@ -1,7 +1,7 @@
 import json
 import sys
 import yaml
-from cerberus import Validator
+from jsonschema import Draft7Validator
 from pkgutil import get_data
 from omeroweb.settings import process_custom_settings, report_settings
 
@@ -50,9 +50,12 @@ def oauth_provider_config(o):
                 cfg = json.load(f)
     schemastr = get_data('omero_oauth', 'schema/provider-schema.yaml')
     schema = yaml.load(schemastr)
-    v = Validator(schema)
-    if not v.validate(cfg):
-        raise ValueError('Invalid provider configuration: {}'.format(v.errors))
+    v = Draft7Validator(schema)
+    if not v.is_valid(cfg):
+        errs = '\n\n** '.join(
+            ['Invalid provider configuration'] +
+            ['\n\n'.join(str(e) for e in v.iter_errors(cfg))])
+        raise ValueError(errs)
     return cfg
 
 
