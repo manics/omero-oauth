@@ -1,0 +1,27 @@
+---
+providers:
+
+  ######################################################################
+  # example-oauth2-server
+  - name: test
+    displayname: Example Oauth2
+    url:
+      authorisation: http://localhost:5000/oauth/authorize
+      token: http://localhost:5000/oauth/token
+      userinfo: http://localhost:5000/api/me
+      callback: http://localhost:4080/oauth/callback/test
+
+    client:
+      id: CLIENT_ID
+      secret: CLIENT_SECRET
+      scopes:
+        - profile
+
+    userinfo:
+      type: default
+
+    user:
+      name: 'test-{username}'
+      email: '{email}'
+      firstname: '{username}'
+      lastname: '{id}'
