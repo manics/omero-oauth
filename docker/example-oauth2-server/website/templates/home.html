@@ -10,11 +10,10 @@
 <hr>
 {% endfor %}
 
-<br><a href="{{ url_for('.create_client') }}">Create Client</a>
-
 {% else %}
 <form action="" method="post">
   <input type="text" name="username" placeholder="username">
+  <input type="text" name="email" placeholder="email">
   <button type="submit">Login / Signup</button>
 </form>
 {% endif %}

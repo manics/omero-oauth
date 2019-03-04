@@ -1,6 +1,5 @@
 from flask import Blueprint, request, session
 from flask import render_template, redirect, jsonify
-from werkzeug.security import gen_salt
 from authlib.flask.oauth2 import current_token
 from authlib.specs.rfc6749 import OAuth2Error
 from .models import db, User, OAuth2Client
@@ -21,16 +20,17 @@ def current_user():
 def home():
     if request.method == 'POST':
         username = request.form.get('username')
+        email = request.form.get('email')
         user = User.query.filter_by(username=username).first()
         if not user:
-            user = User(username=username)
+            user = User(username=username, email=email)
             db.session.add(user)
             db.session.commit()
         session['id'] = user.id
         return redirect('/')
     user = current_user()
     if user:
-        clients = OAuth2Client.query.filter_by(user_id=user.id).all()
+        clients = OAuth2Client.query.all()
     else:
         clients = []
     return render_template('home.html', user=user, clients=clients)
@@ -39,25 +39,6 @@ def home():
 @bp.route('/logout')
 def logout():
     del session['id']
-    return redirect('/')
-
-
-@bp.route('/create_client', methods=('GET', 'POST'))
-def create_client():
-    user = current_user()
-    if not user:
-        return redirect('/')
-    if request.method == 'GET':
-        return render_template('create_client.html')
-    client = OAuth2Client(**request.form.to_dict(flat=True))
-    client.user_id = user.id
-    client.client_id = gen_salt(24)
-    if client.token_endpoint_auth_method == 'none':
-        client.client_secret = ''
-    else:
-        client.client_secret = gen_salt(48)
-    db.session.add(client)
-    db.session.commit()
     return redirect('/')
 
 
@@ -85,13 +66,28 @@ def issue_token():
     return authorization.create_token_response()
 
 
-@bp.route('/oauth/revoke', methods=['POST'])
-def revoke_token():
-    return authorization.create_endpoint_response('revocation')
-
-
 @bp.route('/api/me')
 @require_oauth('profile')
 def api_me():
     user = current_token.user
-    return jsonify(id=user.id, username=user.username)
+    return jsonify(id=user.id, username=user.username, email=user.email)
+
+
+@bp.route('/api/create_test_client', methods=('POST',))
+def create_test_client():
+    print('args {}'.format(request.args))
+    if not OAuth2Client.query.filter_by(client_name='omero').first():
+        client = OAuth2Client(
+            client_name='Oauth Test Client',
+            client_uri='http://localhost',
+            scope='profile',
+            redirect_uri=request.json['redirect_uri'],
+            grant_type='authorization_code',
+            response_type='code',
+            token_endpoint_auth_method='client_secret_basic',
+            client_id=request.json['client_id'],
+            client_secret=request.json['client_secret'],
+        )
+        db.session.add(client)
+        db.session.commit()
+    return jsonify(client_id='CLIENT_ID', client_secret='CLIENT_SECRET')

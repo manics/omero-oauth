@@ -12,9 +12,10 @@ db = SQLAlchemy()
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(40), unique=True)
+    email = db.Column(db.String(120), unique=False)
 
     def __str__(self):
-        return self.username
+        return '{} ({})'.format(self.username, self.email)
 
     def get_user_id(self):
         return self.id
@@ -27,9 +28,6 @@ class OAuth2Client(db.Model, OAuth2ClientMixin):
     __tablename__ = 'oauth2_client'
 
     id = db.Column(db.Integer, primary_key=True)
-    user_id = db.Column(
-        db.Integer, db.ForeignKey('user.id', ondelete='CASCADE'))
-    user = db.relationship('User')
 
 
 class OAuth2AuthorizationCode(db.Model, OAuth2AuthorizationCodeMixin):
