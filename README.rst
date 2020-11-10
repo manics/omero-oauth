@@ -5,6 +5,14 @@
 OMERO.oauth
 ===========
 
+🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶
+
+This a fork of https://gitlab.com/openmicroscopy/incubator/omero-oauth
+
+Please use the above GitLab repository for all issues.
+
+🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶🔶
+
 OMERO.web application to allow OAuth2 login to OMERO.
 
 This application works by using an OMERO administrative account to implement an alternative authentication method to the standard username and password.
